@@ -10,7 +10,7 @@ As AI Agents begin trading resources (GPU time, API credits) autonomously, they 
 
 **Sentinel Lab** is a portfolio project building this infrastructure from the transistor up. It simulates a high-frequency ledger that allows agents to transact in nanoseconds, identifying where standard architectures fail under load.
 
-## 🏗 Architecture (Day 1)
+## 🏗 Architecture
 We are building a **Pipelined Dual-Port Ledger**.
 
 ```mermaid
@@ -44,7 +44,7 @@ The Failure: Because the memory write from Transaction A hasn't finished before 
 
 
 
-# 🚨 Verification Evidence (Day 1 Log)
+# 🚨 Verification Evidence
 
 Plaintext
 --- SCENARIO 2: The RAW Hazard (Back-to-Back) ---
@@ -55,15 +55,15 @@ AssertionError: RAW Hazard Bug Found! (This is intentional for Day 1)
 
 
 # 🗓 Roadmap
-Day 1: Naive Core & Bug Reproduction (Done ✅)
+1: Naive Core & Bug Reproduction (Done ✅)
 
-Day 2: Hazard Resolution (Forwarding/Bypass Logic)
+2: Hazard Resolution (Forwarding/Bypass Logic)
 
-Day 3: Invariant Checking (SystemVerilog Assertions)
+3: Invariant Checking (SystemVerilog Assertions)
 
-Day 4: Python API & Traffic Generator
+4: Python API & Traffic Generator
 
-Day 5: Risk Dashboard (Streamlit)
+5: Risk Dashboard (Streamlit)
 
 
 
