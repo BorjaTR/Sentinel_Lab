@@ -1,0 +1,15 @@
+# Ignore Verilator Simulation Artifacts
+sim_build/
+obj_dir/
+
+# Ignore Python Cache
+__pycache__/
+*.pyc
+
+# Ignore Simulation Results & Waveforms
+results.xml
+*.vcd
+*.fst
+
+# Ignore Mac System Files
+.DS_Store
