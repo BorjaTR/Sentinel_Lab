@@ -31,7 +31,7 @@ Precision: 64-bit Balances.
 
 Throughput: 1 Transaction / Cycle.
 
-🔬 Phase 1: The "Double Spend" Hazard
+# 🔬 Phase 1: The "Double Spend" Hazard
 The current implementation (ledger_core.sv) uses a standard 2-stage pipeline. Through rigorous verification (test_ledger.py), we have demonstrated a critical Read-After-Write (RAW) hazard.
 
 The Scenario:
@@ -44,7 +44,7 @@ The Failure: Because the memory write from Transaction A hasn't finished before 
 
 
 
-🚨 Verification Evidence (Day 1 Log)
+# 🚨 Verification Evidence (Day 1 Log)
 
 Plaintext
 --- SCENARIO 2: The RAW Hazard (Back-to-Back) ---
@@ -54,7 +54,7 @@ HAZARD DETECTED! 🚨 The second transaction read stale data!
 AssertionError: RAW Hazard Bug Found! (This is intentional for Day 1)
 
 
-🗓 Roadmap
+# 🗓 Roadmap
 Day 1: Naive Core & Bug Reproduction (Done ✅)
 
 Day 2: Hazard Resolution (Forwarding/Bypass Logic)
@@ -67,11 +67,9 @@ Day 5: Risk Dashboard (Streamlit)
 
 
 
-🛠 Usage
-Bash
-# Run the simulation to reproduce the hazard
+# 🛠 Run the simulation
 cd tb
 make
 
 
-Built by Borja Tarazona
+Built by Borja Raga
