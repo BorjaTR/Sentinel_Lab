@@ -4,17 +4,17 @@ class LedgerModel:
 
     def process_transaction(self, sender, receiver, amount):
         """
-        Returns: (success: bool, new_sender_bal, new_receiver_bal)
+        Updates Python state and returns (success, new_sender_bal, new_receiver_bal)
         """
-        # Invariant: Self-transfer check
+        # 1. Self-transfer check
         if sender == receiver:
             return True, self.balances[sender], self.balances[receiver]
 
-        # Invariant: Solvency Check
+        # 2. Solvency Check
         if self.balances[sender] < amount:
             return False, self.balances[sender], self.balances[receiver]
 
-        # Execute
+        # 3. Execute
         self.balances[sender] -= amount
         self.balances[receiver] += amount
 
