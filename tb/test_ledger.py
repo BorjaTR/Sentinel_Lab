@@ -8,7 +8,7 @@ import csv
 
 class ExchangeModel:
     def __init__(self, num_users=1024):
-        self.balances = {i: [1000, 500] for i in range(num_users)}
+        self.balances = {i: [1000000, 1000000] for i in range(num_users)}
         self.vault = [0, 0] # [USDC, GPU]
         self.vol_usdc = 0
         self.vol_gpu = 0
@@ -125,8 +125,8 @@ async def test_revenue_stream(dut):
         total_usdc_hw += raw & 0xFFFFFFFFFFFFFFFF
         total_gpu_hw += (raw >> 64) & 0xFFFFFFFFFFFFFFFF
 
-    initial_usdc = 1024 * 1000
-    initial_gpu = 1024 * 500
+    initial_usdc = 1024 * 1000000
+    initial_gpu = 1024 * 1000000
 
     assert total_usdc_hw == initial_usdc, "Leak Detected in USDC!"
     assert total_gpu_hw == initial_gpu, "Leak Detected in GPU!"
