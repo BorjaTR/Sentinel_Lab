@@ -66,7 +66,7 @@ async def test_mainnet_replay(dut):
     """
     Day 9: Mainnet Replay & Financial Telemetry
     """
-    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())
+    cocotb.fork(Clock(dut.clk, 10, units="ns").start())
     model = ExchangeModel()
 
     # Reset
