@@ -16,3 +16,6 @@ results.xml
 
 # Ignore Test Logs
 *.log
+
+# Ignore Generated Analytics Data
+logs/*.csv

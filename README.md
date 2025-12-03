@@ -155,51 +155,54 @@ vault.gpu += fee_gpu
 
 ## 🚧 Roadmap (v2.0)
 
-### Phase 1: Hardcore Verification (Week 1-2)
+### Phase 1: Hardcore Verification ✅ COMPLETE
 **Goal:** Prove the engine is bulletproof
 
-- [ ] **128-bit forwarding extension**
+- [x] **128-bit forwarding extension**
   - Verify both USDC AND GPU forward correctly in consecutive swaps
   - Add hazard stress tests (A↔B, B↔C, C↔A chains)
 
-- [ ] **Comprehensive SVA assertions**
+- [x] **Comprehensive SVA assertions**
   - Multi-asset conservation properties
   - Overflow detection and prevention
   - Atomicity guarantees (swap commits fully or not at all)
 
-- [ ] **Constrained Random Verification (CRV) Swarm**
+- [x] **Constrained Random Verification (CRV) Swarm**
   - 10K+ random transactions with intentional hazards
   - 30% back-to-back same-user collisions
   - 20% swap chains (A↔B, B↔C patterns)
   - Track coverage: % of users exercised, % hitting forwarding
 
-- [ ] **Directed edge-case test suite**
+- [x] **Directed edge-case test suite**
   - Self-swaps (A↔A → no-op)
   - Exact balance transfers (balance → 0)
   - Insufficient funds (both parties underfunded)
   - Overflow boundary tests
 
-**Deliverable:** "100K random atomic swaps processed at 100M TPS with 0 state corruption verified"
+**Deliverable:** ✅ "100K random atomic swaps processed at 100M TPS with 0 state corruption verified"
+**Documentation:** See `PHASE1_VERIFICATION_COMPLETE.md`
 
-### Phase 2: Production Dashboard (Week 3-4)
+### Phase 2: Production Dashboard ✅ COMPLETE
 **Goal:** Make the system demo-ready for protocol engineers
 
-- [ ] **Enhanced Exchange Operations View**
+- [x] **Enhanced Exchange Operations View**
   - Time-series: success rate, failure patterns
   - Fee accumulation over time
   - Top-10 user portfolio evolution
 
-- [ ] **Risk Analytics Tab**
+- [x] **Risk Analytics Tab**
   - Liquidity depth charts
   - Concentration risk (whale detection)
   - Transaction volume heatmaps
 
-- [ ] **Live Comparison Benchmarks**
-  - Side-by-side: Sentinel vs Solana vs Arbitrum
-  - Latency percentiles (P50, P95, P99)
+- [x] **Live Comparison Benchmarks**
+  - Side-by-side: Sentinel vs Solana vs Arbitrum vs AWS
+  - Latency percentiles (P50, P95, P99, P99.9)
   - Cost per transaction comparison
 
-**Deliverable:** "Interactive dashboard showing real-time exchange heartbeat"
+**Deliverable:** ✅ "Interactive dashboard showing real-time exchange heartbeat"
+**Launch:** `streamlit run dashboard_v2.py`
+**Documentation:** See `PHASE2_DASHBOARD.md`
 
 ### Phase 3: Multi-Protocol Data (Week 5+)
 **Goal:** Show versatility across DePIN ecosystems
@@ -218,7 +221,7 @@ vault.gpu += fee_gpu
 ### Prerequisites
 ```bash
 # Install dependencies
-pip3 install cocotb==1.8.1 streamlit pandas
+pip3 install cocotb==1.8.1 streamlit pandas plotly
 apt-get install verilator  # or brew install verilator on macOS
 ```
 
