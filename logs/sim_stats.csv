@@ -1,5 +1,5 @@
 metric,value
-total_tx,10000
-duration_ns,100200.0
-tps_million,99.80
+total_tx,5000
+duration_ns,50200.0
+tps_million,99.60
 latency_cycles,1
