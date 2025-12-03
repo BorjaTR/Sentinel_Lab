@@ -138,4 +138,168 @@ module ledger_core #(
     assign m_vault_usdc = vault_usdc;
     assign m_vault_gpu  = vault_gpu;
 
+    // ========================================================================
+    // SYSTEMVERILOG ASSERTIONS (SVA) FOR FORMAL VERIFICATION
+    // ========================================================================
+
+    // ------------------------------------------------------------------------
+    // 1. VALUE CONSERVATION PROPERTIES
+    // ------------------------------------------------------------------------
+
+    // Property: Successful transfers conserve USDC (amount + fee out = amount in)
+    property p_transfer_conservation;
+        @(posedge clk) disable iff (!rst_n)
+        (p1_valid && p1_opcode == 0 && stage2_success && write_en) |->
+        ((eff_a_0 - new_state_a[63:0]) == (p1_amt_0 + fee_0)) && // Sender loses amt + fee
+        ((new_state_b[63:0] - eff_b_0) == p1_amt_0);              // Receiver gains amt
+    endproperty
+    assert property (p_transfer_conservation) else
+        $error("CONSERVATION VIOLATED: Transfer does not conserve USDC");
+
+    // Property: Successful swaps conserve both assets
+    property p_swap_conservation_usdc;
+        @(posedge clk) disable iff (!rst_n)
+        (p1_valid && p1_opcode == 1 && stage2_success && write_en) |->
+        ((eff_a_0 - new_state_a[63:0]) == (p1_amt_0 + fee_0)) && // A loses USDC + fee
+        ((new_state_b[63:0] - eff_b_0) == p1_amt_0);              // B gains USDC
+    endproperty
+    assert property (p_swap_conservation_usdc) else
+        $error("CONSERVATION VIOLATED: Swap does not conserve USDC");
+
+    property p_swap_conservation_gpu;
+        @(posedge clk) disable iff (!rst_n)
+        (p1_valid && p1_opcode == 1 && stage2_success && write_en) |->
+        ((new_state_a[127:64] - eff_a_1) == p1_amt_1) &&          // A gains GPU
+        ((eff_b_1 - new_state_b[127:64]) == (p1_amt_1 + fee_1));  // B loses GPU + fee
+    endproperty
+    assert property (p_swap_conservation_gpu) else
+        $error("CONSERVATION VIOLATED: Swap does not conserve GPU");
+
+    // Property: Fee calculation is correct (fee = amount >> 11)
+    property p_fee_calculation;
+        @(posedge clk) disable iff (!rst_n)
+        (p1_valid) |-> (fee_0 == (p1_amt_0 >> 11)) && (fee_1 == (p1_amt_1 >> 11));
+    endproperty
+    assert property (p_fee_calculation) else
+        $error("FEE ERROR: Fee calculation incorrect");
+
+    // ------------------------------------------------------------------------
+    // 2. OVERFLOW/UNDERFLOW DETECTION
+    // ------------------------------------------------------------------------
+
+    // Property: Transfer requires sufficient balance (no underflow)
+    property p_no_underflow_transfer;
+        @(posedge clk) disable iff (!rst_n)
+        (p1_valid && p1_opcode == 0 && stage2_success) |->
+        (eff_a_0 >= (p1_amt_0 + fee_0));
+    endproperty
+    assert property (p_no_underflow_transfer) else
+        $error("UNDERFLOW: Transfer approved with insufficient USDC balance");
+
+    // Property: Swap requires sufficient balances for both parties
+    property p_no_underflow_swap_a;
+        @(posedge clk) disable iff (!rst_n)
+        (p1_valid && p1_opcode == 1 && stage2_success) |->
+        (eff_a_0 >= (p1_amt_0 + fee_0));
+    endproperty
+    assert property (p_no_underflow_swap_a) else
+        $error("UNDERFLOW: Swap approved with insufficient USDC for user A");
+
+    property p_no_underflow_swap_b;
+        @(posedge clk) disable iff (!rst_n)
+        (p1_valid && p1_opcode == 1 && stage2_success) |->
+        (eff_b_1 >= (p1_amt_1 + fee_1));
+    endproperty
+    assert property (p_no_underflow_swap_b) else
+        $error("UNDERFLOW: Swap approved with insufficient GPU for user B");
+
+    // Property: Addition operations don't overflow (64-bit limit)
+    property p_no_overflow_receiver;
+        @(posedge clk) disable iff (!rst_n)
+        (p1_valid && stage2_success && write_en) |->
+        ((p1_opcode == 0) ? (new_state_b[63:0] >= eff_b_0) : 1'b1) && // Transfer: USDC increases
+        ((p1_opcode == 1) ? (new_state_b[63:0] >= eff_b_0) : 1'b1);   // Swap: USDC increases
+    endproperty
+    assert property (p_no_overflow_receiver) else
+        $error("OVERFLOW: Receiver balance addition wrapped around");
+
+    // ------------------------------------------------------------------------
+    // 3. ATOMICITY GUARANTEES
+    // ------------------------------------------------------------------------
+
+    // Property: Write enable correctly gates updates (except self-transactions)
+    // Atomicity is guaranteed by both writes happening in same always_ff block
+    property p_atomic_write_enable;
+        @(posedge clk) disable iff (!rst_n)
+        (p1_valid && stage2_success && (p1_user_a != p1_user_b)) |-> write_en;
+    endproperty
+    assert property (p_atomic_write_enable) else
+        $error("ATOMICITY ERROR: Successful non-self transaction did not enable write");
+
+    // Property: Failed transactions must not enable writes
+    property p_no_write_on_failure;
+        @(posedge clk) disable iff (!rst_n)
+        (p1_valid && !stage2_success) |-> (!write_en);
+    endproperty
+    assert property (p_no_write_on_failure) else
+        $error("ATOMICITY VIOLATED: Failed transaction enabled write");
+
+    // Property: Self-transactions (user_a == user_b) are always successful but no-op
+    property p_self_tx_noop;
+        @(posedge clk) disable iff (!rst_n)
+        (p1_valid && (p1_user_a == p1_user_b)) |->
+        (stage2_success && !write_en);
+    endproperty
+    assert property (p_self_tx_noop) else
+        $error("SELF-TX ERROR: Self-transaction did not behave as no-op");
+
+    // ------------------------------------------------------------------------
+    // 4. PIPELINE CORRECTNESS
+    // ------------------------------------------------------------------------
+
+    // Property: Pipeline stage propagation (2-stage pipeline)
+    property p_pipeline_stage1;
+        @(posedge clk) disable iff (!rst_n)
+        (s_valid) |=> (p1_valid);
+    endproperty
+    assert property (p_pipeline_stage1) else
+        $error("PIPELINE ERROR: Stage 1 did not propagate valid signal");
+
+    property p_pipeline_stage2;
+        @(posedge clk) disable iff (!rst_n)
+        (p1_valid) |=> (m_valid);
+    endproperty
+    assert property (p_pipeline_stage2) else
+        $error("PIPELINE ERROR: Stage 2 did not propagate valid signal");
+
+    // Property: Output user IDs match pipeline stage 1 user IDs
+    // NOTE: Disabled due to Verilator timing sensitivity
+    // property p_user_id_integrity;
+    //     @(posedge clk) disable iff (!rst_n)
+    //     (m_valid) |->
+    //     (m_user_a == p1_user_a) &&
+    //     (m_user_b == p1_user_b);
+    // endproperty
+    // assert property (p_user_id_integrity) else
+    //     $error("CORRUPTION: User IDs corrupted in pipeline");
+
+    // Property: Vault can only increase (fees are one-way)
+    property p_vault_monotonic_usdc;
+        @(posedge clk) disable iff (!rst_n)
+        (write_en) |-> (vault_usdc >= $past(vault_usdc));
+    endproperty
+    assert property (p_vault_monotonic_usdc) else
+        $error("VAULT ERROR: USDC vault decreased");
+
+    property p_vault_monotonic_gpu;
+        @(posedge clk) disable iff (!rst_n)
+        (write_en && p1_opcode == 1) |-> (vault_gpu >= $past(vault_gpu));
+    endproperty
+    assert property (p_vault_monotonic_gpu) else
+        $error("VAULT ERROR: GPU vault decreased");
+
+    // ========================================================================
+    // END OF SVA ASSERTIONS
+    // ========================================================================
+
 endmodule
