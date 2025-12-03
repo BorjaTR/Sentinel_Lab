@@ -48,7 +48,7 @@ async def test_revenue_stream(dut):
     """
     Cocotb Test: Verify Hardware Against Golden Model
     """
-    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())
+    cocotb.fork(Clock(dut.clk, 10, units="ns").start())
     model = ExchangeModel()
 
     dut.rst_n.value = 0
