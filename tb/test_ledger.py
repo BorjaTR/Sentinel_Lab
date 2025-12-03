@@ -1,61 +1,69 @@
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import RisingEdge
+from cocotb.triggers import RisingEdge, Timer
 import sys
 import os
+import random
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../model"))
 from ledger_model import LedgerModel
 
 @cocotb.test()
-async def test_hazard_resolution(dut):
+async def test_agent_swarm(dut):
     """
-    Day 2: Verify that the Forwarding Logic fixes the RAW Hazard.
+    Day 3: The Agent Swarm (Batch Mode)
+    Inject 5,000 random transactions back-to-back.
+    Verify FINAL state consistency to prove no money was lost.
     """
     cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())
     model = LedgerModel()
 
+    # Reset
     dut.rst_n.value = 0
     await RisingEdge(dut.clk)
     dut.rst_n.value = 1
     dut.s_valid.value = 0
     await RisingEdge(dut.clk)
 
-    dut._log.info("--- STARTING HAZARD STRESS TEST ---")
+    dut._log.info("--- 🚀 LAUNCHING AGENT SWARM (5,000 TXs) ---")
 
-    # Tx A: Agent 1 -> 2 (Amount 50)
-    dut.s_payer.value = 1
-    dut.s_payee.value = 2
-    dut.s_amount.value = 50
-    dut.s_valid.value = 1
-    model.process_transaction(1, 2, 50) # Bal 1: 950
-    await RisingEdge(dut.clk)
+    # 1. INJECTION PHASE
+    for i in range(5000):
+        payer = random.randint(0, 1023)
+        payee = random.randint(0, 1023)
+        amount = random.randint(1, 100) 
 
-    # Tx B: Agent 1 -> 3 (Amount 50) - IMMEDIATE
-    # This should now read 950 (forwarded), NOT 1000 (RAM)
-    dut.s_payer.value = 1
-    dut.s_payee.value = 3
-    dut.s_amount.value = 50
-    dut.s_valid.value = 1
-    model.process_transaction(1, 3, 50) # Bal 1: 900
-    await RisingEdge(dut.clk)
+        dut.s_payer.value = payer
+        dut.s_payee.value = payee
+        dut.s_amount.value = amount
+        dut.s_valid.value = 1
 
-    # Clear
+        # Keep model in sync
+        model.process_transaction(payer, payee, amount)
+
+        await RisingEdge(dut.clk)
+
+    # 2. COOLDOWN PHASE
     dut.s_valid.value = 0
+    for _ in range(10): # Wait for pipeline to drain
+        await RisingEdge(dut.clk)
+
+    # 3. VERIFICATION PHASE (Backdoor Read)
+    # We read the internal RAM directly to verify the final state.
+    dut._log.info("--- 🛑 SWARM COMPLETE. VERIFYING LEDGER... ---")
     
-    # Wait for Pipeline
-    await RisingEdge(dut.clk)
-    await RisingEdge(dut.clk)
-
-    # Check Result of Tx B
-    hw_bal = int(dut.m_bal_payer.value)
-    model_bal = model.balances[1]
-
-    dut._log.info(f"Hardware Balance: {hw_bal}")
-    dut._log.info(f"Model Balance:    {model_bal}")
-
-    if hw_bal == model_bal:
-        dut._log.info("SUCCESS! 🛡️ Forwarding Logic prevented the double spend.")
+    errors = 0
+    for i in range(1024):
+        # Access internal signal: dut.balances
+        hw_bal = int(dut.balances[i].value)
+        exp_bal = model.balances[i]
+        
+        if hw_bal != exp_bal:
+            dut._log.error(f"❌ User {i}: HW {hw_bal} != Model {exp_bal}")
+            errors += 1
+            
+    if errors == 0:
+        dut._log.info(f"✅ SUCCESS: All 1,024 accounts match perfectly after 5,000 high-speed trades.")
+        dut._log.info(f"🛡️  Zero Forwarding Errors Detected.")
     else:
-        dut._log.error("FAILURE! 🚨 Hazard still exists.")
-        assert False, f"Expected {model_bal}, Got {hw_bal}"
+        assert False, f"Ledger corrupted! {errors} account mismatches found."

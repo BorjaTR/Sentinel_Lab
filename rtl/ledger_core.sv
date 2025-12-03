@@ -65,34 +65,27 @@ module ledger_core #(
     logic stage2_success;
     logic write_en;
     
-    // Internal signals for the "Effective" balance after forwarding
     logic [BALANCE_WIDTH-1:0] effective_bal_payer;
     logic [BALANCE_WIDTH-1:0] effective_bal_payee;
 
     always_comb begin
-        // --- 1. FORWARDING LOGIC (The Fix) ---
-        // Default: Use data from RAM
+        // Forwarding Logic (The Fix)
         effective_bal_payer = p1_bal_payer_read;
         effective_bal_payee = p1_bal_payee_read;
 
-        // Check Payer Hazard:
-        // If the PREVIOUS transaction (now at Output 'm_') wrote to this Payer,
-        // use that result instead of the RAM read.
-        if (m_valid && m_success && (m_payer == p1_payer)) begin
+        // Check Payer Hazard
+        if (m_valid && m_success && (m_payer == p1_payer)) 
             effective_bal_payer = m_bal_payer;
-        end else if (m_valid && m_success && (m_payee == p1_payer)) begin
-            // Edge case: Payer was the Payee in previous cycle
+        else if (m_valid && m_success && (m_payee == p1_payer)) 
             effective_bal_payer = m_bal_payee;
-        end
 
-        // Check Payee Hazard:
-        if (m_valid && m_success && (m_payer == p1_payee)) begin
+        // Check Payee Hazard
+        if (m_valid && m_success && (m_payer == p1_payee)) 
             effective_bal_payee = m_bal_payer;
-        end else if (m_valid && m_success && (m_payee == p1_payee)) begin
+        else if (m_valid && m_success && (m_payee == p1_payee)) 
             effective_bal_payee = m_bal_payee;
-        end
 
-        // --- 2. EXECUTION LOGIC ---
+        // Execution Logic
         stage2_success = 1'b0;
         write_en = 1'b0;
         new_bal_payer = effective_bal_payer;
@@ -134,5 +127,23 @@ module ledger_core #(
             m_bal_payee <= new_bal_payee;
         end
     end
+
+    // ---------------------------------------------------------
+    // THE AUDITOR: Hardware Invariant Checking
+    // ---------------------------------------------------------
+    
+    `ifdef SIMULATION
+    always_ff @(posedge clk) begin
+        if (rst_n && m_valid && m_success && write_en) begin
+            // Invariant: The sum of balances involved in the trade must NOT change.
+            assert((effective_bal_payer + effective_bal_payee) == (new_bal_payer + new_bal_payee))
+            else $error("CRITICAL: Money Created/Destroyed! Payer: %0d, Payee: %0d", p1_payer, p1_payee);
+
+            // Invariant: No negative balances
+            assert(new_bal_payer <= effective_bal_payer) 
+            else $error("CRITICAL: Payer balance increased or underflowed!");
+        end
+    end
+    `endif
 
 endmodule
