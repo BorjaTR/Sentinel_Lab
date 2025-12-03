@@ -1,0 +1,9 @@
+metric,value
+total_tx,50000
+duration_ns,500200.0
+tps_million,99.96
+latency_cycles,2
+rev_usdc,252069
+rev_gpu,0
+vol_usdc,527637160
+vol_gpu,2900035

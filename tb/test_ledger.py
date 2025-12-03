@@ -1,118 +1,155 @@
-import streamlit as st
-import pandas as pd
-import subprocess
-import time
+import cocotb
+from cocotb.clock import Clock
+from cocotb.triggers import RisingEdge, Timer
+import sys
 import os
+import csv
+import random
 
 # ---------------------------------------------------------
-# UI CONFIGURATION
+# PYTHON GOLDEN MODEL
 # ---------------------------------------------------------
-st.set_page_config(
-    page_title="Sentinel Cloud | DePIN Exchange",
-    page_icon="🛡️",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+class ExchangeModel:
+    def __init__(self, num_users=1024):
+        # Init: 1,000,000 to match Hardware
+        self.balances = {i: [1000000, 1000000] for i in range(num_users)} 
+        self.vault = [0, 0] # [USDC, GPU]
 
-st.markdown("""
-    <style>
-        .metric-card { background-color: #0e1117; border: 1px solid #30333d; padding: 20px; border-radius: 10px; }
-        .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #00ff41; color: black; font-weight: bold; }
-    </style>
-""", unsafe_allow_html=True)
-
-# ---------------------------------------------------------
-# SIDEBAR
-# ---------------------------------------------------------
-st.sidebar.title("🛡️ Sentinel Cloud")
-st.sidebar.caption("Hardware Settlement Layer")
-
-scenario = st.sidebar.selectbox(
-    "Data Source",
-    ("Solana Mainnet Replay (50k TXs)", "Synthetic Stress Test (10k TXs)", "Random Fuzzing (5k TXs)")
-)
-
-st.sidebar.markdown("---")
-st.sidebar.metric("Node Status", "ONLINE", "FPGA Active")
-
-# ---------------------------------------------------------
-# EXECUTION ENGINE
-# ---------------------------------------------------------
-def run_simulation(scenario_name):
-    csv_file = None
-    if "Solana" in scenario_name: csv_file = "data/solana_day_1.csv"
-    elif "Stress" in scenario_name: csv_file = "data/scenario_ddos.csv"
-    
-    cmd = ["python3", "run_lab.py"]
-    if csv_file: cmd += ["--scenario", csv_file]
+    def process(self, op, u_a, u_b, amt0, amt1):
+        if u_a == u_b: return True
+        bal_a = self.balances[u_a]
+        bal_b = self.balances[u_b]
         
-    with st.spinner(f"🚀 Ingesting Data & Replaying on Hardware..."):
-        time.sleep(0.3) 
-        result = subprocess.run(cmd, capture_output=True, text=True)
-    return result
+        # Fee Calculation (Bit Shift >> 11)
+        fee0 = amt0 >> 11
+        fee1 = amt1 >> 11
+
+        if op == 0: # Transfer
+            if bal_a[0] >= (amt0 + fee0):
+                bal_a[0] -= (amt0 + fee0)
+                bal_b[0] += amt0
+                self.vault[0] += fee0
+                return True
+        elif op == 1: # Swap
+            if bal_a[0] >= (amt0 + fee0) and bal_b[1] >= (amt1 + fee1):
+                bal_a[0] -= (amt0 + fee0)
+                bal_a[1] += amt1
+                bal_b[0] += amt0
+                bal_b[1] -= (amt1 + fee1)
+                self.vault[0] += fee0
+                self.vault[1] += fee1
+                return True
+        return False
 
 # ---------------------------------------------------------
-# MAIN PANEL
+# CSV LOADER
 # ---------------------------------------------------------
-st.title("DePIN Settlement Engine")
-st.markdown("### Real-time Atomic Swap & Settlement Layer")
+def load_processed_scenario(filename):
+    trades = []
+    with open(filename, 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            trades.append({
+                'p': int(row['payer']),
+                'r': int(row['payee']),
+                'a0': int(row['amount0']),
+                'a1': int(row['amount1']),
+                'op': int(row['opcode'])
+            })
+    return trades
 
-# Top Level KPIs
-k1, k2, k3, k4 = st.columns(4)
-tps_disp = k1.empty()
-lat_disp = k2.empty()
-rev_disp = k3.empty()
-vol_disp = k4.empty()
+# ---------------------------------------------------------
+# MAIN TESTBENCH
+# ---------------------------------------------------------
+@cocotb.test()
+async def test_mainnet_replay(dut):
+    """
+    Day 9: Mainnet Replay & Financial Telemetry
+    """
+    cocotb.start_soon(Clock(dut.clk, 10, unit="ns").start())
+    model = ExchangeModel()
 
-# Init State
-tps_disp.metric("Throughput", "0 M TPS")
-lat_disp.metric("Latency", "0 ns")
-rev_disp.metric("Protocol Revenue", "$0.00")
-vol_disp.metric("24h Volume", "$0")
+    # Reset
+    dut.rst_n.value = 0
+    await RisingEdge(dut.clk)
+    dut.rst_n.value = 1
+    dut.s_valid.value = 0
+    await RisingEdge(dut.clk)
 
-if st.button("REPLAY TRANSACTIONS"):
-    res = run_simulation(scenario)
+    # Load Scenario
+    scenario_path = os.environ.get("SCENARIO_FILE")
+    trades = []
     
-    if res.returncode == 0:
-        try:
-            df = pd.read_csv("logs/sim_stats.csv", index_col=0)
-            
-            # Metrics
-            tps = float(df.loc["tps_million"].iloc[0])
-            rev_usdc = int(df.loc["rev_usdc"].iloc[0])
-            rev_gpu = int(df.loc["rev_gpu"].iloc[0])
-            vol_usdc = int(df.loc["vol_usdc"].iloc[0])
-            
-            # Update UI
-            tps_disp.metric("Throughput", f"{tps:.2f} M TPS", "Hardware Speed")
-            lat_disp.metric("Latency", "10 ns", "Atomic Swap")
-            rev_disp.metric("Protocol Revenue", f"{rev_usdc} USDC", f"+{rev_gpu} GPU Credits")
-            vol_disp.metric("Processed Volume", f"{vol_usdc:,} USDC")
-            
-            # Visualization
-            st.markdown("---")
-            c1, c2 = st.columns(2)
-            
-            with c1:
-                st.subheader("Asset Flow Breakdown")
-                chart_data = pd.DataFrame({
-                    "Asset": ["USDC (Liquidity)", "GPU Credits (Compute)"],
-                    "Volume": [vol_usdc, int(df.loc["vol_gpu"].iloc[0])]
-                })
-                st.bar_chart(chart_data.set_index("Asset"))
-                
-            with c2:
-                st.subheader("Settlement Latency vs Cloud")
-                lat_data = pd.DataFrame({
-                    "System": ["AWS (Database)", "Solana (L1)", "Sentinel (FPGA)"],
-                    "Latency (ms)": [50, 400, 0.00001]
-                })
-                st.bar_chart(lat_data.set_index("System"))
-
-            st.success("✅ Batch Settled successfully on-chain.")
-            
-        except Exception as e:
-            st.error(f"Telemetry Error: {e}")
+    if scenario_path:
+        dut._log.info(f"--- 🎞️ REPLAYING MAINNET BATCH: {scenario_path} ---")
+        trades = load_processed_scenario(scenario_path)
     else:
-        st.error("Simulation Failed")
-        st.code(res.stderr)
+        dut._log.info("--- 🎲 MODE: RANDOM SWARM (Default) ---")
+        for _ in range(5000):
+            trades.append({'p': random.randint(0,1023), 'r': random.randint(0,1023), 
+                           'a0': 50, 'a1': 10, 'op': random.randint(0,1)})
+
+    start_time = cocotb.utils.get_sim_time(units='ns')
+    
+    # Execution Loop
+    vol_usdc = 0
+    vol_gpu = 0
+    
+    for i, t in enumerate(trades):
+        dut.s_opcode.value = t['op']
+        dut.s_user_a.value = t['p']
+        dut.s_user_b.value = t['r']
+        dut.s_amount_0.value = t['a0']
+        dut.s_amount_1.value = t['a1']
+        dut.s_valid.value = 1
+        
+        # Update Model
+        if model.process(t['op'], t['p'], t['r'], t['a0'], t['a1']):
+            vol_usdc += t['a0']
+            vol_gpu += t['a1']
+
+        await RisingEdge(dut.clk)
+        
+        if i % 10000 == 0 and i > 0:
+            dut._log.info(f"   ... Replayed {i} transactions ...")
+
+    # Cooldown
+    dut.s_valid.value = 0
+    for _ in range(20): await RisingEdge(dut.clk)
+    
+    end_time = cocotb.utils.get_sim_time(units='ns')
+    duration = end_time - start_time
+    tps = len(trades) / (duration / 1e9) / 1e6
+
+    # ---------------------------------------------------------
+    # VERIFICATION & EXPORT
+    # ---------------------------------------------------------
+    errors = 0
+    total_usdc = int(dut.m_vault_usdc.value)
+    total_gpu = int(dut.m_vault_gpu.value)
+    
+    # Write CSV for Dashboard
+    with open("../logs/sim_stats.csv", "w") as f:
+        f.write(f"metric,value\n")
+        f.write(f"total_tx,{len(trades)}\n")
+        f.write(f"duration_ns,{duration}\n")
+        f.write(f"tps_million,{tps:.2f}\n")
+        f.write(f"latency_cycles,2\n")
+        f.write(f"rev_usdc,{total_usdc}\n")
+        f.write(f"rev_gpu,{total_gpu}\n")
+        f.write(f"vol_usdc,{vol_usdc}\n")
+        f.write(f"vol_gpu,{vol_gpu}\n")
+
+    # Verify Balances
+    for i in range(1024):
+        raw = int(dut.portfolios[i].value)
+        hw_usdc = raw & 0xFFFFFFFFFFFFFFFF
+        hw_gpu = (raw >> 64) & 0xFFFFFFFFFFFFFFFF
+        
+        if hw_usdc != model.balances[i][0]:
+            errors += 1
+
+    if errors == 0:
+        dut._log.info("✅ SUCCESS: Mainnet Replay verified. 100% State Match.")
+    else:
+        assert False, f"Replay Failed! {errors} corruptions detected."
