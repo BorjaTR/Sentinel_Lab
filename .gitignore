@@ -13,3 +13,6 @@ results.xml
 
 # Ignore Mac System Files
 .DS_Store
+
+# Ignore Test Logs
+*.log
