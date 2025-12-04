@@ -1,7 +1,5 @@
 # Sentinel Lab: Hardware-Accelerated DePIN Exchange
 
-![Dashboard](dashboard.png)
-
 ![Status](https://img.shields.io/badge/Status-Operational-00ff41)
 ![Throughput](https://img.shields.io/badge/Throughput-99.98_M_TPS-blue)
 ![Latency](https://img.shields.io/badge/Latency-10ns-orange)
@@ -29,6 +27,8 @@ Protocol designers face a critical gap:
 - ⚙️ **Test 100 fee configurations** in 10 minutes (parameter sweeps)
 - 📊 **Compare results side-by-side** (revenue vs failure rate vs liquidity)
 - ✅ **Deploy optimal config with confidence** (before writing smart contracts)
+
+<img width="700" height="450" alt="Screenshot 2025-12-04 at 17 28 31" src="https://github.com/user-attachments/assets/80295235-a5ac-400d-a5f8-539daae6dc90" />
 
 ### Market Position
 
