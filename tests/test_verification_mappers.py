@@ -13,9 +13,12 @@ import hashlib
 import random
 from typing import List
 
-from sentinel_cloud.schema import SentinelTx, TxOpcode, UserRole
+from sentinel_cloud.schema import SentinelTx, Opcode
 from sentinel_cloud.mappers import normalize_solana, normalize_evm_erc20, normalize_depin_rewards
 from sentinel_cloud.io import load_and_normalize
+
+# UserRole is not defined in schema, roles are just strings
+VALID_ROLES = ['client', 'validator', 'miner', 'treasury']
 
 
 class TestMapperDeterminism:
@@ -119,7 +122,8 @@ class TestMapperValidation:
 
         # Should either reject or default to safe opcode
         tx = normalize_solana(row, num_users=1024, strict_roles=False)
-        assert tx.opcode in list(TxOpcode), f"Invalid opcode: {tx.opcode}"
+        valid_opcodes = ['transfer', 'swap', 'reward', 'penalty']
+        assert tx.opcode in valid_opcodes, f"Invalid opcode: {tx.opcode}"
 
     def test_negative_amounts_rejected(self):
         """Test that negative amounts are rejected or sanitized"""
@@ -158,7 +162,7 @@ class TestMapperValidation:
         # In strict mode, should reject or default
         try:
             tx = normalize_solana(row, num_users=1024, strict_roles=True)
-            assert tx.role_a in list(UserRole), f"Invalid role: {tx.role_a}"
+            assert tx.role_a in VALID_ROLES, f"Invalid role: {tx.role_a}"
         except (ValueError, KeyError):
             # Expected: reject invalid role
             pass
@@ -354,8 +358,9 @@ def test_mapper_fuzz(mapper_name):
             if tx:
                 assert 0 <= tx.user_a < 1024
                 assert 0 <= tx.user_b < 1024
-                assert tx.amount0 >= 0  # No negative amounts
-                assert tx.opcode in list(TxOpcode)
+                assert tx.asset0_amount >= 0  # No negative amounts
+                valid_opcodes = ['transfer', 'swap', 'reward', 'penalty']
+                assert tx.opcode in valid_opcodes
 
         except (ValueError, KeyError, TypeError, AttributeError):
             # Expected: some inputs will be rejected
