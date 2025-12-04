@@ -189,9 +189,17 @@ vault.gpu += fee_gpu
 - ✅ Protocol revenue tracking
 - ✅ Asset flow visualization
 
+### Tokenomics Testing Layer (NEW)
+- ✅ Role economics & treasury sustainability
+- ✅ Streaming mode with real-time alerts
+- ✅ Shadow-node A/B testing
+- ✅ Parameter sweep engine
+- ✅ Interactive Jupyter demo
+- ✅ Production case study
+
 ---
 
-## 🚧 Roadmap (v3.0 - Tokenomics Wind Tunnel)
+## 🚧 Roadmap (v1.0 - Tokenomics Wind Tunnel)
 
 ### Phase 1: Programmable Tokenomics Layer ✅ COMPLETE
 **Goal:** Make the hardware core and golden model configurable (fees, basic economics)
@@ -352,28 +360,184 @@ Config               Fee (bps)    Revenue ($)     Volume ($)      TPS
 
 ---
 
-### Phase 6: Python SDK & CLI (FUTURE)
-**Goal:** Package as professional developer tool
+### Phase 6: Role Economics & Treasury Sustainability ✅ COMPLETE
+**Goal:** Track per-role P&L and treasury runway
 
-- [ ] Library structure: `sentinel_cloud/` package
-- [ ] High-level Client API
-- [ ] CLI: `sentinel run`, `sentinel sweep`, `sentinel compare`
-- [ ] Installation: `pip install sentinel-cloud`
+- [x] **Role-Aware Accounting**
+  - Per-role fees paid/earned (miner, validator, client, treasury)
+  - Net revenue calculation per role
+  - Identify economic imbalances
 
-**Deliverable:** "Self-service tokenomics wind tunnel SDK"
+- [x] **Treasury Modeling**
+  - Initial balance, burn rate, revenue rate tracking
+  - Runway calculation (days until depletion)
+  - Sustainability analysis (infinite runway when net positive)
+
+- [x] **Economics Invariants**
+  - Fee consistency: Σ(fees_paid) = treasury_collected
+  - No free lunch: No role extracts more than system revenue
+  - Non-negative treasury: Balance never goes negative
+  - Volume sanity: Role accounting matches total volume
+
+**Deliverable:** "Role-aware economics with treasury sustainability analysis"
+
+**Implementation:**
+- `sentinel_cloud/role_economics.py` - Role P&L and treasury modeling (620 lines)
+- `TreasuryConfig` dataclass with explicit assumptions
+- `calculate_simulation_days()` - Single source of truth for time conversions
+- **Usage:** Automatic in all simulations, results include `role_metrics` and `treasury_state`
 
 ---
 
-### Phase 7: Multi-Run Dashboard Upgrade (FUTURE)
-**Goal:** Turn dashboard into tokenomics lab UI
+### Phase 6.5: Math Hardening & Economics Invariants ✅ COMPLETE
+**Goal:** Bulletproof economics calculations with invariant checks
 
-- [ ] Multi-run awareness (load/compare experiments)
-- [ ] Fee vs Revenue charts
-- [ ] Fee vs Failure Rate analysis
-- [ ] Config comparison overlays
-- [ ] Experiment runner UI (parameter sweeps from browser)
+- [x] **Deterministic Time Calculations**
+  - `calculate_simulation_days()` - Consistent timestamp → days conversion
+  - Fallback to transaction count when timestamps are identical
+  - No wall-clock dependencies
 
-**Deliverable:** "Interactive tokenomics experimentation workbench"
+- [x] **Economics Invariant Validation**
+  - 5 invariant checks on every simulation
+  - Detailed violation reporting with thresholds
+  - Conservative tolerance (0.1% for floating-point drift)
+
+- [x] **TreasuryConfig Formalization**
+  - Explicit initial balance, simulation days, emissions schedule
+  - No hidden assumptions
+  - Documented in `RunResult.treasury_config`
+
+**Deliverable:** "Production-grade economics with formal invariants"
+
+**Test Results:**
+```
+✅ All 5 invariants pass on 50K transaction replay
+✅ Treasury runway calculations verified
+✅ Role accounting matches system totals
+```
+
+---
+
+### Phase 7: Streaming & Shadow-Node Mode ✅ COMPLETE
+**Goal:** Real-time monitoring and multi-config A/B testing
+
+- [x] **Stream Processor**
+  - Incremental transaction ingestion
+  - Window strategies: Tumbling, Sliding, Session
+  - Configurable alert rules (treasury, failure rate, role imbalance)
+  - Checkpoint/resume for fault tolerance
+
+- [x] **Shadow-Node Mode**
+  - Run multiple configs in parallel on same stream
+  - Answer "what if we had used X% fees?" without production risk
+  - Deterministic multi-config comparison
+
+- [x] **Alert System**
+  - Built-in rules: treasury runway, failure rate, role imbalance, revenue drop
+  - Configurable thresholds and severity levels
+  - Real-time alerting with JSONL logging
+
+- [x] **CLI Tools**
+  - `stream_cli.py` - Command-line streaming interface
+  - Single-processor and shadow-node modes
+  - Windowed results with live metrics
+
+**Deliverable:** "Always-on economics copilot for production monitoring"
+
+**Implementation:**
+- `sentinel_cloud/streaming.py` - Streaming engine (525 lines)
+- `sentinel_cloud/stream_cli.py` - CLI interface (185 lines)
+- **Usage:** `python3 -m sentinel_cloud.stream_cli --input data.csv --fee 50 --alert-treasury 90`
+
+---
+
+### Phase 7.5: Streaming Robustness & Determinism Tests ✅ COMPLETE
+**Goal:** Validate streaming mode is production-ready
+
+- [x] **Determinism Tests**
+  - Same input produces identical output across runs
+  - No hidden state or wall-clock dependencies
+  - Shadow node consistency validation
+
+- [x] **Alert Rule Correctness**
+  - Treasury runway alert fires when expected
+  - Role imbalance detection works correctly
+  - High failure rate thresholds validated
+
+- [x] **Streaming Architecture Validation**
+  - Window triggering logic verified
+  - Buffer accumulation tested
+  - State tracking confirmed
+
+**Deliverable:** "Production-ready streaming with determinism guarantees"
+
+**Test Results:**
+```
+5 tests, 5 passed, 0 failed ✅
+✅ Determinism (Same Input)
+✅ Shadow Node Determinism
+✅ Alert: Treasury Runway
+✅ Alert: Role Imbalance
+✅ Alert: High Failure Rate
+```
+
+**Implementation:**
+- `tests/test_streaming_robustness.py` - Robustness test suite (543 lines)
+- `tests/test_streaming.py` - Basic streaming validation (231 lines)
+
+---
+
+### Phase 8A: Case Study & Demo Pack ✅ COMPLETE
+**Goal:** Outward-facing materials for protocol designers
+
+- [x] **Flagship Case Study**
+  - 4-6 page analysis: "Optimizing DePIN Protocol Fees"
+  - Problem, method, results, recommendation structure
+  - Real data: 50K Solana transactions, 9 fee configurations
+  - Business impact: 76 seconds vs weeks of testnet observation
+
+- [x] **Demo Jupyter Notebook**
+  - Interactive walkthrough: load data → sweep fees → visualize results
+  - 10 executable cells with plots (revenue, failure rate, runway, role P&L)
+  - Production-ready code examples
+  - Clear recommendations section
+
+- [x] **Repository Polish**
+  - Updated README with all phases (1-7.5, 8A)
+  - Clear roadmap with completion status
+  - Professional documentation structure
+
+**Deliverable:** "Production-ready case study and interactive demo"
+
+**Materials:**
+- `docs/case_study_solana_fees.md` - Flagship case study (600+ lines)
+- `demo_solana_fee_lab.ipynb` - Interactive Jupyter demo
+- **Usage:** `jupyter notebook demo_solana_fee_lab.ipynb`
+
+---
+
+## ⚡ Run This in 3 Commands
+
+Get started with Sentinel Cloud in under 2 minutes:
+
+```bash
+# 1. Install dependencies
+pip3 install cocotb==1.8.1 streamlit pandas plotly numpy jupyter
+
+# 2. Run fee sweep (9 configurations in ~90 seconds)
+python3 run_experiment.py --scenario data/solana_day_1.csv --mapper solana --fees 0 25 50 75 100
+
+# 3. Launch interactive demo
+jupyter notebook demo_solana_fee_lab.ipynb
+```
+
+**What you'll see:**
+- ⚡ Hardware-accelerated simulations at 99.98M TPS
+- 📊 Revenue vs fee trade-offs with real Solana data
+- 🏦 Treasury sustainability analysis
+- 👥 Role economics breakdown (validators, clients, miners)
+
+**Read the full case study**: [`docs/case_study_solana_fees.md`](docs/case_study_solana_fees.md)
 
 ---
 
