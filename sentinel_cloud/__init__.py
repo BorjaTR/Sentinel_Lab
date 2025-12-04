@@ -15,7 +15,7 @@ Usage:
 """
 
 from .io import load_and_normalize, write_canonical_csv, read_canonical_csv, convert_to_testbench_format
-from .schema import SentinelTx, Opcode, CANONICAL_CSV_COLUMNS
+from .schema import SentinelTx, Opcode, CANONICAL_CSV_COLUMNS, VALID_ROLES, validate_role
 from .mappers import (
     normalize_solana,
     normalize_evm_erc20,
@@ -36,6 +36,8 @@ __all__ = [
     'SentinelTx',
     'Opcode',
     'CANONICAL_CSV_COLUMNS',
+    'VALID_ROLES',
+    'validate_role',
 
     # Mappers
     'normalize_solana',

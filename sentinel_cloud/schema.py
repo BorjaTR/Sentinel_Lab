@@ -13,6 +13,7 @@ The canonical schema is chain-agnostic - it works for any dual-asset economy:
 
 from dataclasses import dataclass
 from typing import Optional
+from enum import IntEnum
 
 
 @dataclass
@@ -23,19 +24,29 @@ class SentinelTx:
     All external transaction data (Solana, EVM, DePIN protocols) is normalized
     into this format before being replayed through the hardware engine.
 
+    Asset Semantics (Critical Convention):
+        asset0_amount: ALWAYS the unit of account (money token)
+            - Examples: USDC, FIL, HNT, ETH, SOL, MATIC
+            - Used for economic metrics (revenue, volume, fees)
+
+        asset1_amount: ALWAYS the resource/utility token (if dual-asset)
+            - Examples: GPU credits, storage bytes, bandwidth, compute units
+            - Set to 0 for single-asset transfers
+            - Non-zero indicates atomic swap (opcode=1)
+
     Fields:
         timestamp: Unix timestamp in seconds (or milliseconds, normalized by mapper)
         user_a: Sender user ID (0..NUM_USERS-1, hashed from address)
         user_b: Recipient user ID (0..NUM_USERS-1, hashed from address)
-        asset0_amount: Money token amount (USDC, FIL, HNT, ETH, etc.)
-        asset1_amount: Resource credit amount (GPU, storage, bandwidth, etc.)
-        opcode: Transaction type:
-            - 0: Transfer (A → B, asset0 only)
-            - 1: Atomic Swap (A ↔ B, bidirectional asset0 ↔ asset1)
-            - 2: Reward/Emission (protocol treasury → user)
-            - 3: Penalty/Slash (user → protocol treasury)
-        role_a: Optional role of user_a ("client", "miner", "validator", "treasury")
-        role_b: Optional role of user_b
+        asset0_amount: Money token amount (unit of account) - see Asset Semantics
+        asset1_amount: Resource token amount (utility) - see Asset Semantics
+        opcode: Transaction type (use Opcode enum):
+            - Opcode.TRANSFER (0): A → B, asset0 only
+            - Opcode.SWAP (1): A ↔ B, bidirectional asset0 ↔ asset1
+            - Opcode.REWARD (2): Protocol treasury → user
+            - Opcode.PENALTY (3): User → protocol treasury
+        role_a: Optional role of user_a (see VALID_ROLES)
+        role_b: Optional role of user_b (see VALID_ROLES)
         tx_hash: Original transaction hash (for audit trail)
         block_height: Original block number (for temporal analysis)
 
@@ -89,12 +100,13 @@ class SentinelTx:
     tx_hash: str = ""
     block_height: int = 0
 
-    def validate(self, num_users: int = 1024) -> bool:
+    def validate(self, num_users: int = 1024, strict_roles: bool = True) -> bool:
         """
         Validate transaction fields.
 
         Args:
             num_users: Maximum user ID (default 1024)
+            strict_roles: Enforce role validation against VALID_ROLES (default True)
 
         Returns:
             bool: True if valid, False otherwise
@@ -102,8 +114,9 @@ class SentinelTx:
         Validation rules:
             - user_a, user_b in [0, num_users)
             - amounts >= 0
-            - opcode in [0, 3]
+            - opcode in [Opcode.TRANSFER, Opcode.SWAP, Opcode.REWARD, Opcode.PENALTY]
             - timestamp >= 0
+            - roles in VALID_ROLES (if strict_roles=True)
         """
         if not (0 <= self.user_a < num_users):
             return False
@@ -111,10 +124,15 @@ class SentinelTx:
             return False
         if self.asset0_amount < 0 or self.asset1_amount < 0:
             return False
-        if not (0 <= self.opcode <= 3):
+        if not (Opcode.TRANSFER <= self.opcode <= Opcode.PENALTY):
             return False
         if self.timestamp < 0:
             return False
+        if strict_roles:
+            if not validate_role(self.role_a):
+                return False
+            if not validate_role(self.role_b):
+                return False
         return True
 
     def to_csv_row(self) -> dict:
@@ -177,10 +195,46 @@ CANONICAL_CSV_COLUMNS = [
 ]
 
 
-# Opcode constants for readability
-class Opcode:
-    """Transaction operation codes"""
-    TRANSFER = 0  # A → B (asset0 only)
-    SWAP = 1      # A ↔ B (bidirectional asset0 ↔ asset1)
-    REWARD = 2    # Protocol → User (emission)
-    PENALTY = 3   # User → Protocol (slash)
+# Opcode enum for type safety
+class Opcode(IntEnum):
+    """
+    Transaction operation codes.
+
+    Using IntEnum ensures type safety while maintaining compatibility with
+    hardware testbench (expects integer opcodes).
+    """
+    TRANSFER = 0  # A → B (asset0 only, single-direction)
+    SWAP = 1      # A ↔ B (bidirectional asset0 ↔ asset1, atomic)
+    REWARD = 2    # Protocol → User (emission, treasury payout)
+    PENALTY = 3   # User → Protocol (slash, fee, burn)
+
+
+# Valid role identifiers
+VALID_ROLES = {
+    "",                    # Empty = unspecified (default)
+    "client",             # Regular user/customer
+    "miner",              # Proof-of-work participant
+    "validator",          # Proof-of-stake participant
+    "treasury",           # Protocol-controlled account
+    "hotspot",            # IoT device (Helium)
+    "storage_provider",   # Storage network node (Filecoin)
+    "sequencer",          # L2 block producer
+    "lp",                 # Liquidity provider
+}
+
+
+def validate_role(role: str) -> bool:
+    """
+    Validate role string against known roles.
+
+    Args:
+        role: Role identifier string
+
+    Returns:
+        bool: True if valid, False otherwise
+
+    Note:
+        Empty string ("") is valid (means role unspecified).
+        Validation is case-sensitive.
+    """
+    return role in VALID_ROLES
