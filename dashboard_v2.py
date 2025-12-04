@@ -100,10 +100,15 @@ st.markdown("### Hardware Settlement Layer for DePIN Protocols")
 
 # Control Panel
 if st.button("▶️ RUN SIMULATION", use_container_width=True):
-    res = run_simulation(scenario)
+    with st.spinner("🚀 Running simulation... This may take 30-60 seconds"):
+        res = run_simulation(scenario)
 
     if res.returncode == 0:
         st.success("✅ Simulation Complete!")
+        # Show simulation output
+        if res.stdout:
+            with st.expander("View Simulation Output"):
+                st.code(res.stdout)
         # Clear cache to reload new data
         load_analytics_data.clear()
         # Force page rerun to display new data
@@ -111,6 +116,8 @@ if st.button("▶️ RUN SIMULATION", use_container_width=True):
     else:
         st.error("❌ Simulation Failed")
         st.code(res.stderr)
+        if res.stdout:
+            st.code(res.stdout)
 
 st.markdown("---")
 
