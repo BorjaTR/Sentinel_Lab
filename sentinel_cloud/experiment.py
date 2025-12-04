@@ -356,16 +356,18 @@ def run_scenario(
     scenario_path: str,
     mapper: str,
     config: Config,
-    verbose: bool = False
+    verbose: bool = False,
+    transactions: Optional[List] = None
 ) -> RunResult:
     """
     Run single simulation with given config.
 
     Args:
-        scenario_path: Path to transaction CSV
+        scenario_path: Path to transaction CSV (ignored if transactions provided)
         mapper: Protocol mapper ('solana', 'evm', 'depin', etc.)
         config: Simulation configuration
         verbose: Print detailed output
+        transactions: Optional pre-loaded transactions (for streaming mode)
 
     Returns:
         RunResult: Simulation results and metrics
@@ -395,14 +397,15 @@ def run_scenario(
         env["FEE_BPS_ASSET0"] = str(config.fee_bps_asset0)
         env["FEE_BPS_ASSET1"] = str(config.fee_bps_asset1)
 
-        # Normalize transactions
+        # Normalize transactions (or use provided transactions for streaming)
         processed_file = "data/processed_batch.csv"
-        transactions = load_and_normalize(
-            csv_path=scenario_path,
-            mapper=mapper,
-            num_users=1024,
-            validate=True
-        )
+        if transactions is None:
+            transactions = load_and_normalize(
+                csv_path=scenario_path,
+                mapper=mapper,
+                num_users=1024,
+                validate=True
+            )
         convert_to_testbench_format(transactions, processed_file)
         env["SCENARIO_FILE"] = os.path.abspath(processed_file)
 
