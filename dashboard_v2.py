@@ -130,21 +130,32 @@ if st.button("▶️ RUN SIMULATION", use_container_width=True):
     with st.spinner("🚀 Running simulation... This may take 30-60 seconds"):
         res = run_simulation(scenario)
 
+    # Debug: Show what happened
+    st.write(f"DEBUG: Return code = {res.returncode}")
+    st.write(f"DEBUG: stdout length = {len(res.stdout) if res.stdout else 0}")
+    st.write(f"DEBUG: stderr length = {len(res.stderr) if res.stderr else 0}")
+
     if res.returncode == 0:
         st.success("✅ Simulation Complete!")
         # Show simulation output
         if res.stdout:
             with st.expander("View Simulation Output"):
                 st.code(res.stdout)
+        # Check if logs were created
+        if os.path.exists("logs/sim_stats.csv"):
+            st.success("✅ Analytics files found!")
+        else:
+            st.warning("⚠️ Analytics files not found in logs/ directory")
         # Clear cache to reload new data
         load_analytics_data.clear()
         # Force page rerun to display new data
+        time.sleep(1)  # Give time to see messages
         st.rerun()
     else:
         st.error("❌ Simulation Failed")
-        st.code(res.stderr)
+        st.code(f"STDERR:\n{res.stderr}")
         if res.stdout:
-            st.code(res.stdout)
+            st.code(f"STDOUT:\n{res.stdout}")
 
 st.markdown("---")
 
