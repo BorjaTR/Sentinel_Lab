@@ -7,11 +7,23 @@ import random
 import csv
 
 class ExchangeModel:
-    def __init__(self, num_users=1024):
+    """
+    Python Golden Model for Hardware Verification.
+
+    Fee calculation must be bit-exact with RTL:
+    fee = (amount * fee_bps) // 10000
+
+    Uses Python integer division (//) which matches SystemVerilog
+    division (truncates towards zero).
+    """
+    def __init__(self, num_users=1024, fee_bps_asset0=50, fee_bps_asset1=0):
         self.balances = {i: [1000000, 1000000] for i in range(num_users)}
         self.vault = [0, 0] # [USDC, GPU]
         self.vol_usdc = 0
         self.vol_gpu = 0
+        # Configurable fees (basis points: 0-10000)
+        self.fee_bps_asset0 = fee_bps_asset0
+        self.fee_bps_asset1 = fee_bps_asset1
 
     def process(self, op, u_a, u_b, amt0, amt1):
         if u_a == u_b: return True
@@ -19,9 +31,11 @@ class ExchangeModel:
         bal_a = self.balances[u_a]
         bal_b = self.balances[u_b]
 
-        # Fee Calculation (Bit Shift >> 11)
-        fee0 = amt0 >> 11
-        fee1 = amt1 >> 11
+        # Configurable Fee Calculation
+        # Formula: fee = (amount * fee_bps) / 10000
+        # Python // matches Verilog / (integer division, truncate towards zero)
+        fee0 = (amt0 * self.fee_bps_asset0) // 10000
+        fee1 = (amt1 * self.fee_bps_asset1) // 10000
 
         if op == 0: # Transfer
             if bal_a[0] >= (amt0 + fee0):
@@ -46,13 +60,25 @@ class ExchangeModel:
 @cocotb.test()
 async def test_revenue_stream(dut):
     """
-    Cocotb Test: Verify Hardware Against Golden Model
+    Cocotb Test: Verify Hardware Against Golden Model with Configurable Fees
     """
-    cocotb.fork(Clock(dut.clk, 10, units="ns").start())
-    model = ExchangeModel()
+    cocotb.start_soon(Clock(dut.clk, 10, units="ns").start())
 
+    # Read fee configuration from environment (default: 50 bps = 0.50%)
+    fee_bps_asset0 = int(os.environ.get("FEE_BPS_ASSET0", "50"))
+    fee_bps_asset1 = int(os.environ.get("FEE_BPS_ASSET1", "0"))
+
+    dut._log.info(f"⚙️  Fee Configuration: Asset0={fee_bps_asset0} bps ({fee_bps_asset0/100:.2f}%), Asset1={fee_bps_asset1} bps ({fee_bps_asset1/100:.2f}%)")
+
+    # Initialize golden model with configurable fees
+    model = ExchangeModel(fee_bps_asset0=fee_bps_asset0, fee_bps_asset1=fee_bps_asset1)
+
+    # Reset and initialize DUT
     dut.rst_n.value = 0
+    dut.s_fee_bps_asset0.value = fee_bps_asset0
+    dut.s_fee_bps_asset1.value = fee_bps_asset1
     await RisingEdge(dut.clk)
+
     dut.rst_n.value = 1
     dut.s_valid.value = 0
     await RisingEdge(dut.clk)
@@ -159,9 +185,13 @@ async def test_revenue_stream(dut):
 
     # Write basic statistics to CSV
     os.makedirs("../logs", exist_ok=True)
+    failure_rate = (tx_failure_count / len(transactions)) if len(transactions) > 0 else 0.0
     with open("../logs/sim_stats.csv", 'w') as f:
         f.write("metric,value\n")
         f.write(f"total_tx,{len(transactions)}\n")
+        f.write(f"success_count,{tx_success_count}\n")
+        f.write(f"failure_count,{tx_failure_count}\n")
+        f.write(f"failure_rate,{failure_rate:.6f}\n")
         f.write(f"duration_ns,{duration_ns}\n")
         f.write(f"tps_million,{tps:.2f}\n")
         f.write(f"latency_cycles,1\n")
