@@ -105,6 +105,7 @@ class RunResult:
     time_series: List[Dict[str, Any]] = field(default_factory=list)
     role_metrics: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     treasury_state: Optional[Dict[str, Any]] = None
+    treasury_config: Optional[Dict[str, Any]] = None  # Phase 6.5: Make assumptions explicit
 
     def get_metric(self, name: str, default: float = 0.0) -> float:
         """
@@ -129,7 +130,8 @@ class RunResult:
             'error_message': self.error_message,
             'time_series': self.time_series,
             'role_metrics': self.role_metrics,
-            'treasury_state': self.treasury_state
+            'treasury_state': self.treasury_state,
+            'treasury_config': self.treasury_config
         }
 
 
@@ -491,8 +493,19 @@ def run_scenario(
         # Phase 6: Role-based economics analysis
         role_metrics_dict = {}
         treasury_state_dict = None
+        treasury_config_dict = None
         try:
-            from .role_economics import RoleAnalyzer
+            from .role_economics import RoleAnalyzer, TreasuryConfig, calculate_simulation_days
+
+            # Calculate actual simulation duration from timestamps
+            simulation_days = calculate_simulation_days(transactions)
+
+            # Create treasury config with explicit assumptions
+            treasury_config = TreasuryConfig(
+                initial_balance_usdc=1_000_000.0,  # Default: 1M USDC
+                simulation_days=simulation_days,
+                emissions_schedule=None  # No emissions by default
+            )
 
             # Analyze role-based economics
             analyzer = RoleAnalyzer(transactions, fee_bps=config.fee_bps_asset0)
@@ -504,12 +517,8 @@ def run_scenario(
                 for role, metrics in role_metrics.items()
             }
 
-            # Calculate treasury state (assume 1-day simulation, 1M USDC initial treasury)
-            treasury = analyzer.calculate_treasury_state(
-                initial_balance=1_000_000,
-                emissions_schedule=None,  # No emissions by default
-                simulation_days=1.0
-            )
+            # Calculate treasury state
+            treasury = analyzer.calculate_treasury_state(treasury_config)
 
             treasury_state_dict = {
                 'balance_usdc': treasury.balance_usdc,
@@ -521,6 +530,24 @@ def run_scenario(
                 'fees_collected': treasury.fees_collected,
                 'emissions_sent': treasury.emissions_sent
             }
+
+            # Store treasury config for reproducibility
+            treasury_config_dict = treasury_config.to_dict()
+
+            # Phase 6.5: Validate economics invariants
+            if verbose:
+                from .role_economics import validate_economics_consistency
+                invariant_errors = validate_economics_consistency(
+                    transactions=transactions,
+                    role_metrics=role_metrics,
+                    treasury_state=treasury,
+                    fee_bps=config.fee_bps_asset0,
+                    tolerance=0.01
+                )
+                if invariant_errors:
+                    print(f"    ⚠️  Economics invariant violations detected:")
+                    for err in invariant_errors:
+                        print(f"       - {err}")
 
         except Exception as e:
             if verbose:
@@ -536,7 +563,8 @@ def run_scenario(
             success=True,
             time_series=time_series,
             role_metrics=role_metrics_dict,
-            treasury_state=treasury_state_dict
+            treasury_state=treasury_state_dict,
+            treasury_config=treasury_config_dict
         )
 
     except Exception as e:

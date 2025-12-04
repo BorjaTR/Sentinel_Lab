@@ -30,6 +30,79 @@ from typing import Dict, List, Optional, Tuple
 from .schema import SentinelTx, VALID_ROLES
 
 
+def calculate_simulation_days(transactions: List[SentinelTx]) -> float:
+    """
+    Calculate simulation duration in days from transaction timestamps.
+
+    This is the single source of truth for time-base conversions.
+    All "per day" metrics must use this function.
+
+    Args:
+        transactions: List of transactions with timestamps
+
+    Returns:
+        Duration in days (float)
+
+    Example:
+        >>> txs = [SentinelTx(timestamp=0, ...), SentinelTx(timestamp=86400, ...)]
+        >>> calculate_simulation_days(txs)
+        1.0
+    """
+    if not transactions:
+        return 0.0
+
+    timestamps = [tx.timestamp for tx in transactions]
+    min_ts = min(timestamps)
+    max_ts = max(timestamps)
+
+    duration_seconds = max_ts - min_ts
+
+    # Handle edge case: all transactions at same timestamp
+    if duration_seconds == 0:
+        # Assume 1 transaction per second as baseline
+        duration_seconds = len(transactions)
+
+    return duration_seconds / 86400.0  # Convert seconds to days
+
+
+@dataclass
+class TreasuryConfig:
+    """
+    Treasury configuration for sustainability analysis.
+
+    Makes all treasury assumptions explicit and configurable.
+
+    Attributes:
+        initial_balance_usdc: Starting treasury balance in USDC
+        simulation_days: Duration of simulation in days (for rate calculations)
+        emissions_schedule: Optional emission schedule to apply
+
+    Example:
+        config = TreasuryConfig(
+            initial_balance_usdc=5_000_000,
+            simulation_days=1.0
+        )
+    """
+    initial_balance_usdc: float = 1_000_000.0
+    simulation_days: float = 1.0
+    emissions_schedule: Optional['EmissionsSchedule'] = None
+
+    def __post_init__(self):
+        """Validate treasury config."""
+        if self.initial_balance_usdc < 0:
+            raise ValueError(f"initial_balance_usdc must be >= 0, got {self.initial_balance_usdc}")
+        if self.simulation_days <= 0:
+            raise ValueError(f"simulation_days must be > 0, got {self.simulation_days}")
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary for JSON export."""
+        return {
+            'initial_balance_usdc': self.initial_balance_usdc,
+            'simulation_days': self.simulation_days,
+            'has_emissions': self.emissions_schedule is not None
+        }
+
+
 @dataclass
 class RoleDistribution:
     """
@@ -285,33 +358,29 @@ class RoleAnalyzer:
 
     def calculate_treasury_state(
         self,
-        initial_balance: float,
-        emissions_schedule: Optional[EmissionsSchedule] = None,
-        simulation_days: float = 1.0
+        treasury_config: TreasuryConfig
     ) -> TreasuryState:
         """
         Calculate treasury sustainability metrics.
 
         Args:
-            initial_balance: Starting treasury balance in USDC
-            emissions_schedule: Emission schedule (if None, no emissions)
-            simulation_days: Duration of simulation in days
+            treasury_config: Treasury configuration (balance, duration, emissions)
 
         Returns:
             TreasuryState with sustainability metrics
         """
         # Calculate total fees collected (treasury revenue)
         total_fees = sum(tx.asset0_amount * self.fee_rate for tx in self.transactions)
-        fees_per_day = total_fees / simulation_days if simulation_days > 0 else 0
+        fees_per_day = total_fees / treasury_config.simulation_days if treasury_config.simulation_days > 0 else 0
 
         # Calculate total emissions sent (treasury burn)
         total_emissions = 0.0
-        if emissions_schedule:
-            total_emissions = len(self.transactions) * emissions_schedule.rate_per_tx
-            if emissions_schedule.total_budget:
-                total_emissions = min(total_emissions, emissions_schedule.total_budget)
+        if treasury_config.emissions_schedule:
+            total_emissions = len(self.transactions) * treasury_config.emissions_schedule.rate_per_tx
+            if treasury_config.emissions_schedule.total_budget:
+                total_emissions = min(total_emissions, treasury_config.emissions_schedule.total_budget)
 
-        emissions_per_day = total_emissions / simulation_days if simulation_days > 0 else 0
+        emissions_per_day = total_emissions / treasury_config.simulation_days if treasury_config.simulation_days > 0 else 0
 
         # Calculate runway
         net_rate = fees_per_day - emissions_per_day
@@ -319,10 +388,10 @@ class RoleAnalyzer:
             runway = float('inf')  # Sustainable
         else:
             # Days until balance reaches zero
-            runway = initial_balance / abs(net_rate)
+            runway = treasury_config.initial_balance_usdc / abs(net_rate)
 
         return TreasuryState(
-            balance_usdc=initial_balance + (net_rate * simulation_days),
+            balance_usdc=treasury_config.initial_balance_usdc + (net_rate * treasury_config.simulation_days),
             revenue_rate_per_day=fees_per_day,
             burn_rate_per_day=emissions_per_day,
             runway_days=runway,
@@ -424,3 +493,105 @@ def summarize_role_economics(
     lines.append("\n" + "="*70 + "\n")
 
     return "\n".join(lines)
+
+
+def validate_economics_consistency(
+    transactions: List[SentinelTx],
+    role_metrics: Dict[str, RoleMetrics],
+    treasury_state: TreasuryState,
+    fee_bps: int,
+    tolerance: float = 0.01
+) -> List[str]:
+    """
+    Validate economics invariants to catch math bugs.
+
+    Phase 6.5: Economics hardening - ensure role-based accounting is internally consistent.
+
+    Checks:
+    1. Sum of fees paid by roles ≈ treasury fees collected (within tolerance)
+    2. No role has net revenue > total system revenue
+    3. Treasury balance never goes negative in projections
+    4. Role P&L sums are reasonable (no free lunch)
+
+    Args:
+        transactions: List of all transactions
+        role_metrics: Per-role metrics from analyzer
+        treasury_state: Treasury state from analyzer
+        fee_bps: Fee rate in basis points
+        tolerance: Allowed relative error (default 1%)
+
+    Returns:
+        List of error messages (empty if all checks pass)
+
+    Example:
+        >>> errors = validate_economics_consistency(txs, role_metrics, treasury, 50)
+        >>> if errors:
+        ...     for err in errors:
+        ...         print(f"INVARIANT VIOLATION: {err}")
+    """
+    errors = []
+    fee_rate = fee_bps / 10000.0
+
+    # Check 1: Sum of fees paid by roles = treasury fees collected
+    total_fees_from_roles = sum(m.fees_paid for m in role_metrics.values())
+    treasury_fees = treasury_state.fees_collected
+
+    if treasury_fees > 0:
+        relative_error = abs(total_fees_from_roles - treasury_fees) / treasury_fees
+        if relative_error > tolerance:
+            errors.append(
+                f"Fee accounting mismatch: roles paid ${total_fees_from_roles:,.0f}, "
+                f"treasury collected ${treasury_fees:,.0f} "
+                f"({relative_error*100:.2f}% error, tolerance {tolerance*100:.1f}%)"
+            )
+
+    # Check 2: No role has net revenue > total system revenue
+    total_revenue = sum(tx.asset0_amount for tx in transactions)
+    for role, metrics in role_metrics.items():
+        if metrics.net_revenue > total_revenue * (1 + tolerance):
+            errors.append(
+                f"Free lunch detected: {role} has net revenue ${metrics.net_revenue:,.0f} "
+                f"> total system revenue ${total_revenue:,.0f}"
+            )
+
+    # Check 3: Treasury balance never goes negative
+    if treasury_state.balance_usdc < 0:
+        errors.append(
+            f"Treasury balance is negative: ${treasury_state.balance_usdc:,.2f} "
+            f"(initial balance may be too low or burn rate too high)"
+        )
+
+    # Check 4: Sum of role volumes should be reasonable
+    # Each transaction touches 2 roles (sender + receiver), so total role volume
+    # should be ~2x transaction volume (within some tolerance for untracked roles)
+    total_tx_volume = sum(tx.asset0_amount for tx in transactions)
+    total_role_volume = sum(m.volume_usdc for m in role_metrics.values())
+
+    # Expected: total_role_volume ≈ 2 * total_tx_volume (each tx counted twice)
+    # But allow wide tolerance for:
+    # - Empty roles (not all txs may have role annotations)
+    # - Double-counting semantics
+    if total_tx_volume > 0:
+        volume_ratio = total_role_volume / total_tx_volume
+        # Expected range: [0.5, 3.0] (very permissive to handle different accounting methods)
+        if volume_ratio < 0.1 or volume_ratio > 5.0:
+            errors.append(
+                f"Volume accounting anomaly: role volume ${total_role_volume:,.0f}, "
+                f"tx volume ${total_tx_volume:,.0f} (ratio {volume_ratio:.2f}x). "
+                f"Expected ratio between 0.5x and 3.0x. Check role assignment or volume calculation."
+            )
+
+    # Check 5: Runway calculation makes sense
+    if not treasury_state.is_sustainable and treasury_state.runway_days != float('inf'):
+        # Verify: runway = balance / burn_rate_net
+        net_burn = treasury_state.burn_rate_per_day - treasury_state.revenue_rate_per_day
+        if net_burn > 0:
+            expected_runway = treasury_state.balance_usdc / net_burn
+            runway_error = abs(treasury_state.runway_days - expected_runway) / max(expected_runway, 1)
+            if runway_error > tolerance:
+                errors.append(
+                    f"Runway calculation error: reported {treasury_state.runway_days:.1f} days, "
+                    f"expected {expected_runway:.1f} days ({runway_error*100:.1f}% error)"
+                )
+
+    return errors

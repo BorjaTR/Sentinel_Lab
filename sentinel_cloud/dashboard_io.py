@@ -89,7 +89,8 @@ def load_experiment(path: str) -> Optional[ExperimentResult]:
                 error_message=run_data.get('error_message', ''),
                 time_series=run_data.get('time_series', []),
                 role_metrics=run_data.get('role_metrics', {}),
-                treasury_state=run_data.get('treasury_state', None)
+                treasury_state=run_data.get('treasury_state', None),
+                treasury_config=run_data.get('treasury_config', None)  # Phase 6.5
             )
             runs.append(run_result)
 
