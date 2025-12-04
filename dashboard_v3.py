@@ -265,36 +265,8 @@ if mode == "📈 Single Run Analysis":
         with col3:
             st.metric("Wall Time", f"{selected_run.wall_time_seconds:.1f}s")
 
-        # Time series charts
-        st.subheader("Time Series Analysis")
-
-        if selected_run.time_series:
-            ts_df = pd.DataFrame(selected_run.time_series)
-
-            # Revenue accumulation
-            if 'vault_usdc' in ts_df.columns:
-                fig = px.line(
-                    ts_df,
-                    x='tx_count',
-                    y='vault_usdc',
-                    title='Revenue Accumulation Over Time',
-                    labels={'tx_count': 'Transaction Count', 'vault_usdc': 'Revenue (USDC)'}
-                )
-                st.plotly_chart(fig, use_container_width=True)
-
-            # Success rate
-            if 'success_rate' in ts_df.columns:
-                fig = px.line(
-                    ts_df,
-                    x='tx_count',
-                    y='success_rate',
-                    title='Success Rate Over Time',
-                    labels={'tx_count': 'Transaction Count', 'success_rate': 'Success Rate'}
-                )
-                fig.update_yaxes(range=[0, 1])
-                st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No time series data available for this run")
+        # Note: Time series data not yet implemented
+        st.info("ℹ️  Time series charts coming in next update")
 
 else:
     # Comparison mode - show multiple configs
@@ -436,46 +408,8 @@ else:
         else:
             selected_runs = [all_runs[config_names.index(name)] for name in selected_configs]
 
-            # Revenue accumulation overlay
-            fig = go.Figure()
-            for run in selected_runs:
-                if run.time_series and 'vault_usdc' in run.time_series:
-                    ts_df = pd.DataFrame(run.time_series)
-                    fig.add_trace(go.Scatter(
-                        x=ts_df['tx_count'],
-                        y=ts_df['vault_usdc'],
-                        mode='lines',
-                        name=f"{run.config.name} ({run.config.fee_bps_asset0} bps)"
-                    ))
-
-            fig.update_layout(
-                title='Revenue Accumulation Overlay',
-                xaxis_title='Transaction Count',
-                yaxis_title='Revenue (USDC)',
-                hovermode='x unified'
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-            # Success rate overlay
-            fig = go.Figure()
-            for run in selected_runs:
-                if run.time_series and 'success_rate' in run.time_series:
-                    ts_df = pd.DataFrame(run.time_series)
-                    fig.add_trace(go.Scatter(
-                        x=ts_df['tx_count'],
-                        y=ts_df['success_rate'],
-                        mode='lines',
-                        name=f"{run.config.name} ({run.config.fee_bps_asset0} bps)"
-                    ))
-
-            fig.update_layout(
-                title='Success Rate Overlay',
-                xaxis_title='Transaction Count',
-                yaxis_title='Success Rate',
-                hovermode='x unified'
-            )
-            fig.update_yaxes(range=[0, 1])
-            st.plotly_chart(fig, use_container_width=True)
+            # Note: Time series overlays not yet implemented
+            st.info("ℹ️  Time series overlays coming in next update. Currently showing aggregate metrics only.")
 
     # ===== TAB 4: Data Table =====
     with tab4:
