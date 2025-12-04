@@ -53,10 +53,28 @@ def run_simulation(scenario_name):
     cmd = ["python3", "run_lab.py"]
     if csv_file: cmd += ["--scenario", csv_file]
 
-    with st.spinner(f"🚀 Running Hardware Simulation..."):
+    # Show what we're running
+    st.info(f"Running command: {' '.join(cmd)}")
+    st.info(f"Current directory: {os.getcwd()}")
+
+    with st.spinner(f"🚀 Running simulation... This may take 30-60 seconds"):
         time.sleep(0.3)
-        result = subprocess.run(cmd, capture_output=True, text=True)
-    return result
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            st.info(f"Return code: {result.returncode}")
+            return result
+        except subprocess.TimeoutExpired:
+            class TimeoutResult:
+                returncode = 1
+                stdout = ""
+                stderr = "Simulation timed out after 120 seconds"
+            return TimeoutResult()
+        except Exception as e:
+            class ErrorResult:
+                returncode = 1
+                stdout = ""
+                stderr = f"Error running simulation: {str(e)}"
+            return ErrorResult()
 
 # ---------------------------------------------------------
 # DATA LOADING FUNCTIONS
