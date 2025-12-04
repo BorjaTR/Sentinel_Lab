@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 from .client import SentinelClient
+from .mappers import SUPPORTED_PROTOCOLS
 
 
 @click.group()
@@ -48,6 +49,26 @@ def run(scenario: str, fee: int, fee_asset1: int, mapper: str, name: str, verbos
         sentinel run data/solana.csv --fee 100 --name "High Fee"
         sentinel run data/evm.csv --fee 25 --mapper evm
     """
+    # Validate inputs
+    if not (0 <= fee <= 10000):
+        click.echo(f"❌ Error: Fee {fee} bps is out of range [0, 10000] (0-100%)", err=True)
+        click.echo(f"   Hint: 50 bps = 0.50%, 100 bps = 1.00%", err=True)
+        sys.exit(1)
+
+    if not (0 <= fee_asset1 <= 10000):
+        click.echo(f"❌ Error: Fee asset1 {fee_asset1} bps is out of range [0, 10000]", err=True)
+        sys.exit(1)
+
+    if mapper not in SUPPORTED_PROTOCOLS:
+        click.echo(f"❌ Error: Unknown mapper '{mapper}'", err=True)
+        click.echo(f"   Supported mappers: {', '.join(sorted(SUPPORTED_PROTOCOLS.keys()))}", err=True)
+        sys.exit(1)
+
+    if not Path(scenario).exists():
+        click.echo(f"❌ Error: Scenario file not found: {scenario}", err=True)
+        click.echo(f"   Hint: Use an absolute path or path relative to current directory", err=True)
+        sys.exit(1)
+
     client = SentinelClient(verbose=verbose)
 
     try:
@@ -71,8 +92,17 @@ def run(scenario: str, fee: int, fee_asset1: int, mapper: str, name: str, verbos
             click.echo(f"   Error: {result.error_message}")
             sys.exit(1)
 
+    except FileNotFoundError as e:
+        click.echo(f"❌ File not found: {e}", err=True)
+        sys.exit(1)
+    except ValueError as e:
+        click.echo(f"❌ Invalid parameter: {e}", err=True)
+        sys.exit(1)
     except Exception as e:
-        click.echo(f"❌ Error: {e}", err=True)
+        click.echo(f"❌ Unexpected error: {e}", err=True)
+        if verbose:
+            import traceback
+            traceback.print_exc()
         sys.exit(1)
 
 
@@ -106,6 +136,36 @@ def sweep(scenario: str, fee_range: Tuple[int, int, int], fees: Tuple[int, ...],
         # Export results to JSON
         sentinel sweep data/solana.csv --range 0 200 25 --export results.json
     """
+    # Validate mapper
+    if mapper not in SUPPORTED_PROTOCOLS:
+        click.echo(f"❌ Error: Unknown mapper '{mapper}'", err=True)
+        click.echo(f"   Supported mappers: {', '.join(sorted(SUPPORTED_PROTOCOLS.keys()))}", err=True)
+        sys.exit(1)
+
+    # Validate fee range if provided
+    if fee_range:
+        start, end, step = fee_range
+        if not (0 <= start <= 10000 and 0 <= end <= 10000):
+            click.echo(f"❌ Error: Fee range [{start}, {end}] out of bounds [0, 10000]", err=True)
+            sys.exit(1)
+        if start > end:
+            click.echo(f"❌ Error: Invalid fee range: start ({start}) > end ({end})", err=True)
+            sys.exit(1)
+        if step <= 0:
+            click.echo(f"❌ Error: Step size must be positive, got {step}", err=True)
+            sys.exit(1)
+
+    # Validate explicit fees if provided
+    if fees:
+        for fee in fees:
+            if not (0 <= fee <= 10000):
+                click.echo(f"❌ Error: Fee {fee} bps is out of range [0, 10000]", err=True)
+                sys.exit(1)
+
+    if not Path(scenario).exists():
+        click.echo(f"❌ Error: Scenario file not found: {scenario}", err=True)
+        sys.exit(1)
+
     client = SentinelClient(verbose=verbose)
 
     try:
