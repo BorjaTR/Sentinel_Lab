@@ -24,6 +24,14 @@ from .mappers import (
     get_mapper,
     hash_address_to_user_id
 )
+from .experiment import (
+    Config,
+    RunResult,
+    ExperimentResult,
+    run_scenario,
+    run_experiments,
+    generate_fee_sweep_configs
+)
 
 __all__ = [
     # I/O functions
@@ -46,6 +54,14 @@ __all__ = [
     'normalize_depin_penalty',
     'get_mapper',
     'hash_address_to_user_id',
+
+    # Experiment Engine
+    'Config',
+    'RunResult',
+    'ExperimentResult',
+    'run_scenario',
+    'run_experiments',
+    'generate_fee_sweep_configs',
 ]
 
 __version__ = '0.2.0'
