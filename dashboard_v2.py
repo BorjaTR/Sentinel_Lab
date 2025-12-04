@@ -85,10 +85,21 @@ def load_analytics_data(_cache_key):
     """
     data = {}
 
+    # Debug: show current working directory
+    import os as os_debug
+    cwd = os_debug.getcwd()
+    abs_path = os_debug.path.abspath("logs/sim_stats.csv")
+    file_exists = os_debug.path.exists("logs/sim_stats.csv")
+
     try:
         # Basic stats
         if os.path.exists("logs/sim_stats.csv"):
             data['stats'] = pd.read_csv("logs/sim_stats.csv", index_col=0)
+        else:
+            # Debug: why doesn't it exist?
+            data['_debug_cwd'] = cwd
+            data['_debug_abs_path'] = abs_path
+            data['_debug_exists'] = file_exists
 
         # Time series
         if os.path.exists("logs/time_series.csv"):
@@ -152,6 +163,19 @@ data = load_analytics_data(cache_key)
 
 # Debug: show what was loaded
 st.caption(f"🔍 Debug: Loaded data keys: {list(data.keys())}")
+
+# Debug: show working directory info if stats not loaded
+if '_debug_cwd' in data:
+    with st.expander("🔍 Debug Info - Why is sim_stats.csv not found?"):
+        st.write(f"**Current Working Directory:** `{data['_debug_cwd']}`")
+        st.write(f"**Expected Absolute Path:** `{data['_debug_abs_path']}`")
+        st.write(f"**File Exists Check:** {data['_debug_exists']}")
+
+        # List what's actually in logs/
+        import os
+        if os.path.exists("logs"):
+            files = os.listdir("logs")
+            st.write(f"**Files in logs/ directory:** {files}")
 
 if 'stats' not in data:
     st.info("👆 Run a simulation to see analytics")
