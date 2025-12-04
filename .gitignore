@@ -19,3 +19,4 @@ results.xml
 
 # Ignore Generated Analytics Data
 logs/*.csv
+data/processed_batch.csv
