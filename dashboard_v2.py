@@ -133,6 +133,10 @@ def load_analytics_data(_cache_key):
 st.title("🛡️ Sentinel Cloud - Production Dashboard")
 st.markdown("### Hardware Settlement Layer for DePIN Protocols")
 
+# Initialize session state for tracking simulation runs
+if 'sim_run_count' not in st.session_state:
+    st.session_state.sim_run_count = 0
+
 # Control Panel
 if st.button("▶️ RUN SIMULATION", use_container_width=True):
     with st.spinner("🚀 Running simulation... This may take 30-60 seconds"):
@@ -155,8 +159,8 @@ if st.button("▶️ RUN SIMULATION", use_container_width=True):
             else:
                 st.error("❌ sim_stats.csv was NOT created - simulation may have failed silently")
 
-        # Clear cache explicitly to ensure fresh data loads
-        load_analytics_data.clear()
+        # Increment counter to force cache invalidation
+        st.session_state.sim_run_count += 1
         time.sleep(0.5)  # Allow file system to flush
         st.rerun()
     else:
@@ -166,12 +170,13 @@ if st.button("▶️ RUN SIMULATION", use_container_width=True):
 
 st.markdown("---")
 
-# Load data (with cache invalidation based on file modification time)
-cache_key = get_file_mtime("logs/sim_stats.csv")
+# Load data (with cache invalidation based on file mtime AND simulation run count)
+file_mtime = get_file_mtime("logs/sim_stats.csv")
+cache_key = (file_mtime, st.session_state.sim_run_count)  # Tuple ensures fresh load after each sim
 
 # Debug info (can be removed after fixing)
-if cache_key > 0:
-    st.caption(f"🔍 Debug: sim_stats.csv found (mtime: {cache_key})")
+if file_mtime > 0:
+    st.caption(f"🔍 Debug: sim_stats.csv found (mtime: {file_mtime}, run: {st.session_state.sim_run_count})")
 else:
     st.caption("🔍 Debug: sim_stats.csv not found")
 
