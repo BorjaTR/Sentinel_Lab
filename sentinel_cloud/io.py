@@ -174,5 +174,5 @@ def convert_to_testbench_format(
                 tx.user_b,
                 tx.asset0_amount,
                 tx.asset1_amount,
-                tx.opcode
+                int(tx.opcode)  # Convert enum to integer for testbench
             ])
