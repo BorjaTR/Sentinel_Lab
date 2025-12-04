@@ -32,6 +32,11 @@ from .experiment import (
     run_experiments,
     generate_fee_sweep_configs
 )
+from .client import (
+    SentinelClient,
+    SimulationResult,
+    SweepResult
+)
 
 __all__ = [
     # I/O functions
@@ -62,6 +67,11 @@ __all__ = [
     'run_scenario',
     'run_experiments',
     'generate_fee_sweep_configs',
+
+    # High-level Client API
+    'SentinelClient',
+    'SimulationResult',
+    'SweepResult',
 ]
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
