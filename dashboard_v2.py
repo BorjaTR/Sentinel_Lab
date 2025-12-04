@@ -106,6 +106,8 @@ if st.button("▶️ RUN SIMULATION", use_container_width=True):
         st.success("✅ Simulation Complete!")
         # Clear cache to reload new data
         load_analytics_data.clear()
+        # Force page rerun to display new data
+        st.rerun()
     else:
         st.error("❌ Simulation Failed")
         st.code(res.stderr)
