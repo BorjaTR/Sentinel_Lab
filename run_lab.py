@@ -4,10 +4,15 @@ import argparse
 import csv
 import time
 
-def run_simulation(scenario_file=None):
+def run_simulation(scenario_file=None, fee_bps_asset0=50, fee_bps_asset1=0):
     """
     Runs the Verilator simulation via Make.
     Includes auto-cleaning to ensure fresh binaries.
+
+    Args:
+        scenario_file: Path to CSV scenario (optional, uses random fuzzing if None)
+        fee_bps_asset0: Fee in basis points for asset 0 (USDC), 0-10000 (default: 50 = 0.50%)
+        fee_bps_asset1: Fee in basis points for asset 1 (GPU credits), 0-10000 (default: 0 = 0%)
     """
     # 1. Clean previous stats to avoid stale data reading
     if os.path.exists("logs/sim_stats.csv"):
@@ -19,6 +24,11 @@ def run_simulation(scenario_file=None):
     subprocess.run(["rm", "-rf", "tb/sim_build", "tb/results.xml", "tb/__pycache__"], check=False)
 
     env = os.environ.copy()
+
+    # Configure fees via environment variables (passed to cocotb test)
+    env["FEE_BPS_ASSET0"] = str(fee_bps_asset0)
+    env["FEE_BPS_ASSET1"] = str(fee_bps_asset1)
+    print(f"⚙️  Fee Config: Asset0={fee_bps_asset0} bps ({fee_bps_asset0/100:.2f}%), Asset1={fee_bps_asset1} bps ({fee_bps_asset1/100:.2f}%)")
     
     if scenario_file:
         print(f"🚀 Ingesting Mainnet Data: {scenario_file}")
@@ -84,8 +94,20 @@ def run_simulation(scenario_file=None):
         print(result.stdout)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Sentinel Lab Runner")
-    parser.add_argument("--scenario", type=str, help="Path to CSV scenario file")
+    parser = argparse.ArgumentParser(description="Sentinel Lab Runner - Hardware Tokenomics Wind Tunnel")
+    parser.add_argument("--scenario", type=str, help="Path to CSV scenario file (optional, uses random fuzzing if not provided)")
+    parser.add_argument("--fee-bps-asset0", type=int, default=50,
+                        help="Fee for asset 0 (USDC) in basis points (0-10000). Default: 50 = 0.50%%")
+    parser.add_argument("--fee-bps-asset1", type=int, default=0,
+                        help="Fee for asset 1 (GPU credits) in basis points (0-10000). Default: 0 = 0%%")
     args = parser.parse_args()
-    
-    run_simulation(args.scenario)
+
+    # Validate fee ranges
+    if not (0 <= args.fee_bps_asset0 <= 10000):
+        print("❌ Error: --fee-bps-asset0 must be between 0 and 10000")
+        exit(1)
+    if not (0 <= args.fee_bps_asset1 <= 10000):
+        print("❌ Error: --fee-bps-asset1 must be between 0 and 10000")
+        exit(1)
+
+    run_simulation(args.scenario, args.fee_bps_asset0, args.fee_bps_asset1)
