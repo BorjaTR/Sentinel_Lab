@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 from .client import SentinelClient
-from .mappers import SUPPORTED_PROTOCOLS
+from .mappers import MAPPERS
 
 
 @click.group()
@@ -59,9 +59,9 @@ def run(scenario: str, fee: int, fee_asset1: int, mapper: str, name: str, verbos
         click.echo(f"❌ Error: Fee asset1 {fee_asset1} bps is out of range [0, 10000]", err=True)
         sys.exit(1)
 
-    if mapper not in SUPPORTED_PROTOCOLS:
+    if mapper not in MAPPERS:
         click.echo(f"❌ Error: Unknown mapper '{mapper}'", err=True)
-        click.echo(f"   Supported mappers: {', '.join(sorted(SUPPORTED_PROTOCOLS.keys()))}", err=True)
+        click.echo(f"   Supported mappers: {', '.join(sorted(MAPPERS.keys()))}", err=True)
         sys.exit(1)
 
     if not Path(scenario).exists():
@@ -137,9 +137,9 @@ def sweep(scenario: str, fee_range: Tuple[int, int, int], fees: Tuple[int, ...],
         sentinel sweep data/solana.csv --range 0 200 25 --export results.json
     """
     # Validate mapper
-    if mapper not in SUPPORTED_PROTOCOLS:
+    if mapper not in MAPPERS:
         click.echo(f"❌ Error: Unknown mapper '{mapper}'", err=True)
-        click.echo(f"   Supported mappers: {', '.join(sorted(SUPPORTED_PROTOCOLS.keys()))}", err=True)
+        click.echo(f"   Supported mappers: {', '.join(sorted(MAPPERS.keys()))}", err=True)
         sys.exit(1)
 
     # Validate fee range if provided

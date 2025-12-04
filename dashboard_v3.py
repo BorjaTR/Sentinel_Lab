@@ -22,7 +22,7 @@ from sentinel_cloud.dashboard_io import (
     save_experiment
 )
 from sentinel_cloud.experiment import ExperimentResult, RunResult
-from sentinel_cloud.mappers import SUPPORTED_PROTOCOLS
+from sentinel_cloud.mappers import MAPPERS
 
 # =========================================================================
 # PAGE CONFIG
@@ -109,8 +109,8 @@ with st.sidebar.form("sweep_launcher"):
 
     mapper = st.selectbox(
         "Protocol Mapper",
-        options=sorted(SUPPORTED_PROTOCOLS.keys()),
-        index=sorted(SUPPORTED_PROTOCOLS.keys()).index("solana") if "solana" in SUPPORTED_PROTOCOLS else 0
+        options=sorted(MAPPERS.keys()),
+        index=sorted(MAPPERS.keys()).index("solana") if "solana" in MAPPERS else 0
     )
 
     col1, col2, col3 = st.columns(3)
