@@ -4,13 +4,17 @@ import argparse
 import csv
 import time
 
-def run_simulation(scenario_file=None, fee_bps_asset0=50, fee_bps_asset1=0):
+# Import Sentinel Cloud normalization pipeline
+from sentinel_cloud import load_and_normalize, convert_to_testbench_format
+
+def run_simulation(scenario_file=None, mapper='solana', fee_bps_asset0=50, fee_bps_asset1=0):
     """
     Runs the Verilator simulation via Make.
     Includes auto-cleaning to ensure fresh binaries.
 
     Args:
         scenario_file: Path to CSV scenario (optional, uses random fuzzing if None)
+        mapper: Protocol mapper ('solana', 'evm', 'depin', etc.) for normalizing external CSVs
         fee_bps_asset0: Fee in basis points for asset 0 (USDC), 0-10000 (default: 50 = 0.50%)
         fee_bps_asset1: Fee in basis points for asset 1 (GPU credits), 0-10000 (default: 0 = 0%)
     """
@@ -32,44 +36,34 @@ def run_simulation(scenario_file=None, fee_bps_asset0=50, fee_bps_asset1=0):
     
     if scenario_file:
         print(f"🚀 Ingesting Mainnet Data: {scenario_file}")
-        
-        # Mapping Logic: String Wallets -> Hardware IDs (0-1023)
-        mappings = {}
-        next_id = 0
+        print(f"   Protocol: {mapper}")
+
         processed_file = "data/processed_batch.csv"
-        
+
         try:
-            with open(scenario_file, 'r') as fin, open(processed_file, 'w') as fout:
-                reader = csv.DictReader(fin)
-                writer = csv.writer(fout)
-                writer.writerow(["payer", "payee", "amount0", "amount1", "opcode"])
-                
-                row_count = 0
-                for row in reader:
-                    sender = row['sender']
-                    receiver = row['receiver']
-                    
-                    if sender not in mappings:
-                        mappings[sender] = next_id
-                        next_id = (next_id + 1) % 1024
-                    
-                    if receiver not in mappings:
-                        mappings[receiver] = next_id
-                        next_id = (next_id + 1) % 1024
-                    
-                    # Logic: If compute amount > 0, it's a SWAP (Op 1). Else Transfer (Op 0).
-                    amt_usdc = int(row['amount_usdc'])
-                    amt_comp = int(row['amount_compute'])
-                    opcode = 1 if amt_comp > 0 else 0
-                    
-                    writer.writerow([mappings[sender], mappings[receiver], amt_usdc, amt_comp, opcode])
-                    row_count += 1
-            
-            print(f"   -> Batch ready: {row_count} transactions.")
+            # Load and normalize using Sentinel Cloud pipeline
+            # External CSV → Protocol Mapper → Canonical SentinelTx → Testbench Format
+            transactions = load_and_normalize(
+                csv_path=scenario_file,
+                mapper=mapper,
+                num_users=1024,
+                validate=True
+            )
+
+            # Convert canonical format to testbench CSV
+            convert_to_testbench_format(transactions, processed_file)
+
+            print(f"   -> Batch ready: {len(transactions)} transactions normalized.")
             env["SCENARIO_FILE"] = os.path.abspath(processed_file)
-            
+
+        except FileNotFoundError as e:
+            print(f"❌ Error: CSV file not found: {e}")
+            return
+        except ValueError as e:
+            print(f"❌ Error normalizing transactions: {e}")
+            return
         except Exception as e:
-            print(f"❌ Error processing CSV: {e}")
+            print(f"❌ Unexpected error processing CSV: {e}")
             return
 
     # 3. Run Hardware Simulation
@@ -109,6 +103,9 @@ def run_simulation(scenario_file=None, fee_bps_asset0=50, fee_bps_asset1=0):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Sentinel Lab Runner - Hardware Tokenomics Wind Tunnel")
     parser.add_argument("--scenario", type=str, help="Path to CSV scenario file (optional, uses random fuzzing if not provided)")
+    parser.add_argument("--mapper", type=str, default="solana",
+                        choices=['solana', 'evm', 'ethereum', 'arbitrum', 'polygon', 'depin', 'depin_rewards', 'depin_penalty', 'helium', 'filecoin', 'render'],
+                        help="Protocol mapper for normalizing external CSV (default: solana)")
     parser.add_argument("--fee-bps-asset0", type=int, default=50,
                         help="Fee for asset 0 (USDC) in basis points (0-10000). Default: 50 = 0.50%%")
     parser.add_argument("--fee-bps-asset1", type=int, default=0,
@@ -123,4 +120,4 @@ if __name__ == "__main__":
         print("❌ Error: --fee-bps-asset1 must be between 0 and 10000")
         exit(1)
 
-    run_simulation(args.scenario, args.fee_bps_asset0, args.fee_bps_asset1)
+    run_simulation(args.scenario, args.mapper, args.fee_bps_asset0, args.fee_bps_asset1)
