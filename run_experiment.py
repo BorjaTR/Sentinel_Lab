@@ -156,10 +156,15 @@ Examples:
             verbose=not args.quiet
         )
 
+        # Phase 3.5: Add interpretation layer
+        # Only show analysis if we have multiple configs (sweep scenario)
+        if len(result.get_successful_runs()) >= 2 and not args.quiet:
+            result.summarize_fee_sweep()
+
         # Export if requested
         if args.export:
             result.to_json(args.export)
-            print(f"\n💾 Results exported to: {args.export}")
+            print(f"💾 Results exported to: {args.export}")
 
         # Exit with success/failure code
         failed_runs = [r for r in result.runs if not r.success]
