@@ -84,6 +84,7 @@ class RunResult:
     - Performance: TPS, latency, wall clock time
     - Economics: Revenue, volume, fees collected
     - Health: Failure rate, conservation violations
+    - Time-series: Transaction-level snapshots for visualization
 
     Attributes:
         config: Configuration used for this run
@@ -91,12 +92,14 @@ class RunResult:
         wall_time_seconds: Simulation wall clock time
         success: Whether simulation completed successfully
         error_message: Error message if simulation failed
+        time_series: List of time-series snapshots (tx_count, vault, success_rate, etc.)
     """
     config: Config
     metrics: Dict[str, float] = field(default_factory=dict)
     wall_time_seconds: float = 0.0
     success: bool = True
     error_message: str = ""
+    time_series: List[Dict[str, Any]] = field(default_factory=list)
 
     def get_metric(self, name: str, default: float = 0.0) -> float:
         """
@@ -118,7 +121,8 @@ class RunResult:
             'metrics': self.metrics,
             'wall_time_seconds': self.wall_time_seconds,
             'success': self.success,
-            'error_message': self.error_message
+            'error_message': self.error_message,
+            'time_series': self.time_series
         }
 
 
@@ -429,10 +433,15 @@ def run_scenario(
         metrics['num_tx'] = float(num_tx)
 
         # B. Econ-native metrics
-        # B.1: Failure rate (if available from logs)
-        # For now, assume all transactions succeed (0% failure)
-        # TODO: Parse tb logs for actual failure rate
-        metrics['failure_rate'] = 0.0
+        # B.1: Failure rate (from sim_stats.csv)
+        # Now parsed directly from testbench logs
+        # Set default only if not found in logs
+        if 'failure_rate' not in metrics:
+            metrics['failure_rate'] = 0.0
+        if 'success_count' not in metrics:
+            metrics['success_count'] = float(num_tx)
+        if 'failure_count' not in metrics:
+            metrics['failure_count'] = 0.0
 
         # B.2: Behavioral signals from transactions
         if num_tx > 0:
@@ -450,6 +459,28 @@ def run_scenario(
             metrics['median_amount_asset0'] = 0.0
             metrics['max_amount_asset0'] = 0.0
 
+        # Load time-series data if available
+        time_series = []
+        time_series_path = "logs/time_series.csv"
+        if os.path.exists(time_series_path):
+            try:
+                import csv
+                with open(time_series_path, 'r') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        time_series.append({
+                            'batch': int(row['batch']),
+                            'tx_count': int(row['tx_count']),
+                            'time_ns': float(row['time_ns']),
+                            'tps': float(row['tps']),
+                            'success_rate': float(row['success_rate']),
+                            'vault_usdc': int(row['vault_usdc']),
+                            'vault_gpu': int(row['vault_gpu'])
+                        })
+            except Exception as e:
+                if verbose:
+                    print(f"    ⚠️  Warning: Could not load time_series.csv: {e}")
+
         if verbose:
             print(f"    ✓ Completed in {wall_time:.1f}s")
 
@@ -457,7 +488,8 @@ def run_scenario(
             config=config,
             metrics=metrics,
             wall_time_seconds=wall_time,
-            success=True
+            success=True,
+            time_series=time_series
         )
 
     except Exception as e:

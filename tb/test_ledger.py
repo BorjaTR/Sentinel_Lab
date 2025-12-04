@@ -185,9 +185,13 @@ async def test_revenue_stream(dut):
 
     # Write basic statistics to CSV
     os.makedirs("../logs", exist_ok=True)
+    failure_rate = (tx_failure_count / len(transactions)) if len(transactions) > 0 else 0.0
     with open("../logs/sim_stats.csv", 'w') as f:
         f.write("metric,value\n")
         f.write(f"total_tx,{len(transactions)}\n")
+        f.write(f"success_count,{tx_success_count}\n")
+        f.write(f"failure_count,{tx_failure_count}\n")
+        f.write(f"failure_rate,{failure_rate:.6f}\n")
         f.write(f"duration_ns,{duration_ns}\n")
         f.write(f"tps_million,{tps:.2f}\n")
         f.write(f"latency_cycles,1\n")

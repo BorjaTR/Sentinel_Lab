@@ -80,13 +80,14 @@ def load_experiment(path: str) -> Optional[ExperimentResult]:
                 fee_bps_asset1=config_data.get('fee_bps_asset1', 0)
             )
 
-            # Reconstruct RunResult with only the fields it actually has
+            # Reconstruct RunResult with all available fields
             run_result = RunResult(
                 config=config,
                 metrics=run_data.get('metrics', {}),
                 wall_time_seconds=run_data.get('wall_time_seconds', 0.0),
                 success=run_data.get('success', False),
-                error_message=run_data.get('error_message', '')
+                error_message=run_data.get('error_message', ''),
+                time_series=run_data.get('time_series', [])
             )
             runs.append(run_result)
 
