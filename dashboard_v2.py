@@ -140,6 +140,21 @@ if st.button("▶️ RUN SIMULATION", use_container_width=True):
 
     if res.returncode == 0:
         st.success("✅ Simulation Complete! Loading analytics...")
+
+        # Debug: Show simulation output to see if there were any issues
+        with st.expander("🔍 Simulation Output (Debug)"):
+            st.text("STDOUT:")
+            st.code(res.stdout if res.stdout else "(empty)")
+            st.text("STDERR:")
+            st.code(res.stderr if res.stderr else "(empty)")
+
+            # Check if sim_stats.csv was actually created
+            import os
+            if os.path.exists("logs/sim_stats.csv"):
+                st.success("✅ sim_stats.csv was created")
+            else:
+                st.error("❌ sim_stats.csv was NOT created - simulation may have failed silently")
+
         # Cache will auto-refresh based on file modification time
         time.sleep(1)
         st.rerun()
