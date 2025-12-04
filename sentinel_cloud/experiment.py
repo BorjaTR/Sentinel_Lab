@@ -85,6 +85,7 @@ class RunResult:
     - Economics: Revenue, volume, fees collected
     - Health: Failure rate, conservation violations
     - Time-series: Transaction-level snapshots for visualization
+    - Role Economics: Per-role metrics and treasury state (Phase 6)
 
     Attributes:
         config: Configuration used for this run
@@ -93,6 +94,8 @@ class RunResult:
         success: Whether simulation completed successfully
         error_message: Error message if simulation failed
         time_series: List of time-series snapshots (tx_count, vault, success_rate, etc.)
+        role_metrics: Per-role economic metrics (Phase 6)
+        treasury_state: Treasury sustainability metrics (Phase 6)
     """
     config: Config
     metrics: Dict[str, float] = field(default_factory=dict)
@@ -100,6 +103,8 @@ class RunResult:
     success: bool = True
     error_message: str = ""
     time_series: List[Dict[str, Any]] = field(default_factory=list)
+    role_metrics: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    treasury_state: Optional[Dict[str, Any]] = None
 
     def get_metric(self, name: str, default: float = 0.0) -> float:
         """
@@ -122,7 +127,9 @@ class RunResult:
             'wall_time_seconds': self.wall_time_seconds,
             'success': self.success,
             'error_message': self.error_message,
-            'time_series': self.time_series
+            'time_series': self.time_series,
+            'role_metrics': self.role_metrics,
+            'treasury_state': self.treasury_state
         }
 
 
@@ -481,6 +488,44 @@ def run_scenario(
                 if verbose:
                     print(f"    ⚠️  Warning: Could not load time_series.csv: {e}")
 
+        # Phase 6: Role-based economics analysis
+        role_metrics_dict = {}
+        treasury_state_dict = None
+        try:
+            from .role_economics import RoleAnalyzer
+
+            # Analyze role-based economics
+            analyzer = RoleAnalyzer(transactions, fee_bps=config.fee_bps_asset0)
+            role_metrics = analyzer.get_role_breakdown()
+
+            # Convert to serializable format
+            role_metrics_dict = {
+                role: metrics.to_dict()
+                for role, metrics in role_metrics.items()
+            }
+
+            # Calculate treasury state (assume 1-day simulation, 1M USDC initial treasury)
+            treasury = analyzer.calculate_treasury_state(
+                initial_balance=1_000_000,
+                emissions_schedule=None,  # No emissions by default
+                simulation_days=1.0
+            )
+
+            treasury_state_dict = {
+                'balance_usdc': treasury.balance_usdc,
+                'revenue_rate_per_day': treasury.revenue_rate_per_day,
+                'burn_rate_per_day': treasury.burn_rate_per_day,
+                'runway_days': treasury.runway_days if treasury.runway_days != float('inf') else None,
+                'is_sustainable': treasury.is_sustainable,
+                'depletion_risk': treasury.depletion_risk,
+                'fees_collected': treasury.fees_collected,
+                'emissions_sent': treasury.emissions_sent
+            }
+
+        except Exception as e:
+            if verbose:
+                print(f"    ⚠️  Warning: Could not calculate role economics: {e}")
+
         if verbose:
             print(f"    ✓ Completed in {wall_time:.1f}s")
 
@@ -489,7 +534,9 @@ def run_scenario(
             metrics=metrics,
             wall_time_seconds=wall_time,
             success=True,
-            time_series=time_series
+            time_series=time_series,
+            role_metrics=role_metrics_dict,
+            treasury_state=treasury_state_dict
         )
 
     except Exception as e:

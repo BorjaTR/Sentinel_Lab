@@ -301,11 +301,12 @@ if mode == "📈 Single Run Analysis":
 
 else:
     # Comparison mode - show multiple configs
-    tab1, tab2, tab3, tab4 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "💰 Fee vs Revenue",
         "⚖️ Fee vs Risk",
         "📊 Config Overlay",
-        "📋 Data Table"
+        "📋 Data Table",
+        "👥 Role Economics"
     ])
 
     # Collect all successful runs
@@ -511,3 +512,271 @@ else:
             file_name="fee_comparison.csv",
             mime="text/csv"
         )
+
+    # ===== TAB 5: Role Economics =====
+    with tab5:
+        st.subheader("👥 Role-Based Economics & Sustainability")
+
+        # Check if any runs have role metrics
+        runs_with_roles = [run for run in all_runs if run.role_metrics]
+
+        if not runs_with_roles:
+            st.info("""
+            ℹ️  Role economics data not available for these experiments.
+
+            **To enable role tracking:**
+            1. Ensure your scenario CSV includes `role_a` and `role_b` columns
+            2. Run a new sweep to generate role-aware metrics
+            3. Valid roles: client, miner, validator, treasury, lp, storage_provider, sequencer, hotspot
+            """)
+        else:
+            # Config selector for role analysis
+            run_names = [f"{run.config.name} ({run.config.fee_bps_asset0} bps)" for run in runs_with_roles]
+            selected_run_name = st.selectbox(
+                "Select Configuration for Role Analysis",
+                run_names,
+                key="role_config_selector"
+            )
+            selected_run = runs_with_roles[run_names.index(selected_run_name)]
+
+            # Display role metrics
+            st.markdown("### 📊 Role Breakdown")
+
+            if selected_run.role_metrics:
+                # Create role metrics dataframe
+                role_data = []
+                for role, metrics in selected_run.role_metrics.items():
+                    role_data.append({
+                        'Role': role.capitalize(),
+                        'Transactions': metrics['tx_count'],
+                        'Revenue': metrics['revenue_earned'],
+                        'Fees Paid': metrics['fees_paid'],
+                        'Net': metrics['net_revenue'],
+                        'Volume': metrics['volume_usdc'],
+                        'Avg TX Size': metrics['avg_tx_size']
+                    })
+
+                role_df = pd.DataFrame(role_data)
+                role_df = role_df.sort_values('Revenue', ascending=False)
+
+                # Display metrics in columns
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    # Revenue by role
+                    fig = px.bar(
+                        role_df,
+                        x='Role',
+                        y='Revenue',
+                        title='Revenue Earned by Role',
+                        labels={'Revenue': 'Revenue (USDC)', 'Role': 'Participant Role'},
+                        color='Revenue',
+                        color_continuous_scale='Viridis'
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+
+                with col2:
+                    # Net revenue by role
+                    fig = px.bar(
+                        role_df,
+                        x='Role',
+                        y='Net',
+                        title='Net Revenue by Role (Revenue - Fees)',
+                        labels={'Net': 'Net Revenue (USDC)', 'Role': 'Participant Role'},
+                        color='Net',
+                        color_continuous_scale='RdYlGn'
+                    )
+                    fig.add_hline(y=0, line_dash="dash", line_color="gray", annotation_text="Break-even")
+                    st.plotly_chart(fig, use_container_width=True)
+
+                # Transaction volume by role
+                fig = px.pie(
+                    role_df,
+                    values='Volume',
+                    names='Role',
+                    title='Transaction Volume Distribution by Role',
+                    hole=0.4
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+                # Role metrics table
+                st.markdown("### 📋 Detailed Role Metrics")
+
+                display_role_df = role_df.copy()
+                display_role_df['Revenue'] = display_role_df['Revenue'].apply(lambda x: f"${x:,.0f}")
+                display_role_df['Fees Paid'] = display_role_df['Fees Paid'].apply(lambda x: f"${x:,.0f}")
+                display_role_df['Net'] = display_role_df['Net'].apply(lambda x: f"${x:+,.0f}")
+                display_role_df['Volume'] = display_role_df['Volume'].apply(lambda x: f"${x:,.0f}")
+                display_role_df['Avg TX Size'] = display_role_df['Avg TX Size'].apply(lambda x: f"${x:,.0f}")
+
+                st.dataframe(display_role_df, use_container_width=True, hide_index=True)
+
+                # Economic imbalance warnings
+                st.markdown("### ⚠️  Economic Health Checks")
+
+                warnings = []
+
+                # Check for roles paying more than earning
+                for _, row in role_df.iterrows():
+                    if row['Net'] < 0:
+                        warnings.append(f"🔴 **{row['Role']}s** are paying more than earning (Net: ${row['Net']:,.0f})")
+
+                # Check for extreme concentration
+                if len(role_df) > 1:
+                    total_volume = role_df['Volume'].sum()
+                    for _, row in role_df.iterrows():
+                        if total_volume > 0:
+                            share = row['Volume'] / total_volume
+                            if share > 0.8:
+                                warnings.append(
+                                    f"🟡 **{row['Role']}s** dominate {share*100:.1f}% of volume "
+                                    f"(centralization risk)"
+                                )
+
+                if warnings:
+                    for warning in warnings:
+                        st.warning(warning)
+                else:
+                    st.success("✅ No economic imbalances detected")
+
+            # Treasury sustainability
+            st.markdown("---")
+            st.markdown("### 🏛️ Treasury Sustainability")
+
+            if selected_run.treasury_state:
+                treasury = selected_run.treasury_state
+
+                # Treasury metrics
+                col1, col2, col3, col4 = st.columns(4)
+
+                with col1:
+                    st.metric(
+                        "Treasury Balance",
+                        f"${treasury['balance_usdc']:,.0f}",
+                        help="Current treasury balance in USDC"
+                    )
+
+                with col2:
+                    st.metric(
+                        "Revenue/Day",
+                        f"${treasury['revenue_rate_per_day']:,.0f}",
+                        help="Daily fee collection rate"
+                    )
+
+                with col3:
+                    st.metric(
+                        "Burn/Day",
+                        f"${treasury['burn_rate_per_day']:,.0f}",
+                        help="Daily emission/reward payout rate"
+                    )
+
+                with col4:
+                    if treasury['runway_days'] is None:
+                        runway_display = "♾️ Sustainable"
+                        delta_color = "normal"
+                    else:
+                        runway_display = f"{treasury['runway_days']:.0f} days"
+                        delta_color = "inverse" if treasury['runway_days'] < 90 else "normal"
+
+                    st.metric(
+                        "Runway",
+                        runway_display,
+                        delta=treasury['depletion_risk'],
+                        delta_color=delta_color,
+                        help="Days until treasury depletion (if unsustainable)"
+                    )
+
+                # Sustainability visualization
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    # Revenue vs burn comparison
+                    comparison_df = pd.DataFrame({
+                        'Type': ['Fee Revenue', 'Emissions Burn'],
+                        'Amount': [
+                            treasury['revenue_rate_per_day'],
+                            treasury['burn_rate_per_day']
+                        ]
+                    })
+
+                    fig = px.bar(
+                        comparison_df,
+                        x='Type',
+                        y='Amount',
+                        title='Daily Treasury Inflow vs Outflow',
+                        labels={'Amount': 'USDC per Day'},
+                        color='Type',
+                        color_discrete_map={
+                            'Fee Revenue': '#00CC96',
+                            'Emissions Burn': '#EF553B'
+                        }
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+
+                with col2:
+                    # Treasury balance projection
+                    if treasury['runway_days'] and treasury['runway_days'] != float('inf'):
+                        days = min(int(treasury['runway_days']) + 30, 365)
+                    else:
+                        days = 365
+
+                    net_rate = treasury['revenue_rate_per_day'] - treasury['burn_rate_per_day']
+                    projection = [treasury['balance_usdc'] + (net_rate * d) for d in range(days)]
+
+                    proj_df = pd.DataFrame({
+                        'Day': list(range(days)),
+                        'Balance': projection
+                    })
+
+                    fig = px.line(
+                        proj_df,
+                        x='Day',
+                        y='Balance',
+                        title='Treasury Balance Projection',
+                        labels={'Balance': 'Balance (USDC)', 'Day': 'Days from Now'}
+                    )
+                    fig.add_hline(y=0, line_dash="dash", line_color="red", annotation_text="Depletion")
+                    st.plotly_chart(fig, use_container_width=True)
+
+                # Treasury warnings
+                st.markdown("### 💡 Sustainability Recommendations")
+
+                if treasury['is_sustainable']:
+                    st.success(f"""
+                    ✅ **Treasury is sustainable**
+                    - Fee revenue ({treasury['revenue_rate_per_day']:,.0f} USDC/day) exceeds emissions
+                      ({treasury['burn_rate_per_day']:,.0f} USDC/day)
+                    - Net accumulation: ${treasury['revenue_rate_per_day'] - treasury['burn_rate_per_day']:+,.0f}/day
+                    """)
+                else:
+                    risk_level = treasury['depletion_risk']
+
+                    if '💀' in risk_level:
+                        st.error(f"""
+                        💀 **CRITICAL: Treasury depletes in {treasury['runway_days']:.0f} days**
+                        - Immediate action required
+                        - Consider: Increase fees, reduce emissions, or inject capital
+                        """)
+                    elif '🔴' in risk_level:
+                        st.error(f"""
+                        🔴 **HIGH RISK: Treasury depletes in {treasury['runway_days']:.0f} days**
+                        - Burn rate ({treasury['burn_rate_per_day']:,.0f} USDC/day) exceeds revenue
+                          ({treasury['revenue_rate_per_day']:,.0f} USDC/day)
+                        - Net drain: ${treasury['revenue_rate_per_day'] - treasury['burn_rate_per_day']:+,.0f}/day
+                        - Recommend: Adjust tokenomics soon
+                        """)
+                    elif '🟠' in risk_level:
+                        st.warning(f"""
+                        🟠 **MEDIUM RISK: Treasury depletes in {treasury['runway_days']:.0f} days**
+                        - Monitor closely and plan adjustments
+                        - Net drain: ${treasury['revenue_rate_per_day'] - treasury['burn_rate_per_day']:+,.0f}/day
+                        """)
+                    else:
+                        st.warning(f"""
+                        🟡 **LOW RISK: Treasury depletes in {treasury['runway_days']:.0f} days**
+                        - Current trajectory is unsustainable long-term
+                        - Net drain: ${treasury['revenue_rate_per_day'] - treasury['burn_rate_per_day']:+,.0f}/day
+                        """)
+            else:
+                st.info("ℹ️  Treasury state not available for this configuration")
+

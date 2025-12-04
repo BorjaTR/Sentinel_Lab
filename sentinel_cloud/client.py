@@ -281,6 +281,41 @@ class SweepResult:
             print(f"   - Consider testing user behavior at this fee level")
             print(f"   - Recommended starting point: 50-100 bps (0.5-1.0%)")
 
+        # Phase 6: Treasury sustainability analysis
+        optimal_run = next((r for r in self._experiment_result.runs if r.config.name == optimal.config_name), None)
+        if optimal_run and optimal_run.treasury_state:
+            treasury = optimal_run.treasury_state
+            print(f"\n🏛️  Treasury Sustainability Check:")
+
+            if treasury['is_sustainable']:
+                print(f"   ✅ Treasury is sustainable at {optimal.fee_bps} bps")
+                print(f"   - Revenue: ${treasury['revenue_rate_per_day']:,.0f}/day")
+                print(f"   - Burn:    ${treasury['burn_rate_per_day']:,.0f}/day")
+                print(f"   - Net:     ${treasury['revenue_rate_per_day'] - treasury['burn_rate_per_day']:+,.0f}/day")
+            else:
+                risk = treasury['depletion_risk']
+                print(f"   {risk} Treasury depletes in {treasury.get('runway_days', 'unknown')} days")
+                print(f"   - Revenue: ${treasury['revenue_rate_per_day']:,.0f}/day")
+                print(f"   - Burn:    ${treasury['burn_rate_per_day']:,.0f}/day")
+                print(f"   - Net:     ${treasury['revenue_rate_per_day'] - treasury['burn_rate_per_day']:+,.0f}/day")
+
+                if '💀' in risk or '🔴' in risk:
+                    print(f"   ⚠️  Action required: Increase fees, reduce emissions, or inject capital")
+                elif '🟠' in risk:
+                    print(f"   ⚠️  Monitor closely: Treasury trajectory is concerning")
+
+        # Phase 6: Role economics warnings
+        if optimal_run and optimal_run.role_metrics:
+            warnings = []
+            for role, metrics in optimal_run.role_metrics.items():
+                if metrics['net_revenue'] < 0:
+                    warnings.append(f"   ⚠️  {role.capitalize()}s paying more than earning (net: ${metrics['net_revenue']:,.0f})")
+
+            if warnings:
+                print(f"\n👥 Role Economics Warnings:")
+                for warning in warnings:
+                    print(warning)
+
         print("="*70 + "\n")
 
     def to_json(self, output_path: str):
