@@ -110,7 +110,9 @@ def load_analytics_data(_cache_key):
         if os.path.exists("logs/liquidity.csv"):
             data['liquidity'] = pd.read_csv("logs/liquidity.csv", index_col=0)
     except Exception as e:
-        st.error(f"Error loading analytics data: {e}")
+        st.error(f"❌ Error loading analytics data: {e}")
+        import traceback
+        st.code(traceback.format_exc())
 
     return data
 
@@ -139,7 +141,17 @@ st.markdown("---")
 
 # Load data (with cache invalidation based on file modification time)
 cache_key = get_file_mtime("logs/sim_stats.csv")
+
+# Debug info (can be removed after fixing)
+if cache_key > 0:
+    st.caption(f"🔍 Debug: sim_stats.csv found (mtime: {cache_key})")
+else:
+    st.caption("🔍 Debug: sim_stats.csv not found")
+
 data = load_analytics_data(cache_key)
+
+# Debug: show what was loaded
+st.caption(f"🔍 Debug: Loaded data keys: {list(data.keys())}")
 
 if 'stats' not in data:
     st.info("👆 Run a simulation to see analytics")
