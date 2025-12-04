@@ -155,8 +155,9 @@ if st.button("▶️ RUN SIMULATION", use_container_width=True):
             else:
                 st.error("❌ sim_stats.csv was NOT created - simulation may have failed silently")
 
-        # Cache will auto-refresh based on file modification time
-        time.sleep(1)
+        # Clear cache explicitly to ensure fresh data loads
+        load_analytics_data.clear()
+        time.sleep(0.5)  # Allow file system to flush
         st.rerun()
     else:
         st.error("❌ Simulation Failed")
