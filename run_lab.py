@@ -82,11 +82,24 @@ def run_simulation(scenario_file=None, fee_bps_asset0=50, fee_bps_asset1=0):
     if result.returncode == 0:
         print("\n✅ Simulation Complete!")
         print(f"   -> Wall Clock Time: {end_time - start_time:.4f}s")
-        
+
         # Optional: Print the report to terminal
         if os.path.exists("logs/sim_stats.csv"):
-             with open("logs/sim_stats.csv", "r") as f:
-                print(f"📄 Stats Generated:\n{f.read()}")
+            with open("logs/sim_stats.csv", "r") as f:
+                stats = {}
+                for line in f:
+                    if ',' in line and line.strip() != "metric,value":
+                        k, v = line.strip().split(',', 1)
+                        stats[k] = v
+
+                if 'tps_million' in stats:
+                    print(f"\n📊 Performance Metrics:")
+                    print(f"   Engine TPS: {stats['tps_million']}M tx/s (RTL simulation @ 100MHz, 1 tx/cycle)")
+                    print(f"   Note: Excludes I/O, networking, and consensus overhead")
+                    if 'rev_usdc' in stats:
+                        print(f"   Revenue: ${int(stats['rev_usdc']):,} USDC")
+                    if 'vol_usdc' in stats:
+                        print(f"   Volume: ${int(stats['vol_usdc']):,} USDC")
     else:
         print("\n❌ Simulation Failed!")
         print(result.stderr)

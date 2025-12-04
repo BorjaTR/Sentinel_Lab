@@ -232,7 +232,31 @@ For **Production Deployment:**
 
 ---
 
-## Conservation Laws
+## Conservation Laws & Invariant Checking
+
+### Enforcement Strategy
+
+**Python Post-Run Verification (Primary):**
+- Comprehensive conservation checks after every simulation
+- Sums all 1024 user balances + vault per asset
+- Compares against known initial supply
+- **Advantage:** Complete coverage, works in all simulators
+
+**RTL Assertions (Partial):**
+- Vault monotonicity (vaults never decrease)
+- Non-negative balance checks
+- **Limitation:** Verilator has limited SVA support
+- **Note:** Full conservation SVA requires summing 1024 user balances, which is:
+  - Synthesis-heavy (1024-input adder tree)
+  - Not well-supported in open-source tools
+  - Better checked in testbench where we have full visibility
+
+**Design Decision:**
+We enforce conservation laws in the **Python golden model** (bit-exact match with RTL) rather than attempting full SVA in RTL. This is a pragmatic choice for Phase 1:
+- ✅ Catches all conservation violations immediately
+- ✅ Works with Verilator (no commercial tool requirements)
+- ✅ Enables rapid iteration
+- ⚠️ Future: Add partial SVA for vault monotonicity in production
 
 ### Asset Conservation Invariant
 
