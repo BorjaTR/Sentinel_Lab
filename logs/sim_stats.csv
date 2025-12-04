@@ -1,9 +1,0 @@
-metric,value
-total_tx,50000
-duration_ns,500100.0
-tps_million,99.98
-latency_cycles,1
-rev_usdc,2631946
-rev_gpu,0
-vol_usdc,527506045
-vol_gpu,2899439
