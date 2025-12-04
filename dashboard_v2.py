@@ -139,18 +139,21 @@ if st.button("▶️ RUN SIMULATION", use_container_width=True):
         st.success("✅ Simulation Complete!")
         # Show simulation output
         if res.stdout:
-            with st.expander("View Simulation Output"):
+            with st.expander("View Simulation Output", expanded=True):
                 st.code(res.stdout)
         # Check if logs were created
         if os.path.exists("logs/sim_stats.csv"):
             st.success("✅ Analytics files found!")
+            # Clear cache to reload new data
+            load_analytics_data.clear()
+            # Only rerun if files were found
+            st.info("🔄 Refreshing dashboard in 5 seconds...")
+            time.sleep(5)
+            st.rerun()
         else:
             st.warning("⚠️ Analytics files not found in logs/ directory")
-        # Clear cache to reload new data
-        load_analytics_data.clear()
-        # Force page rerun to display new data
-        time.sleep(1)  # Give time to see messages
-        st.rerun()
+            st.info("Check the simulation output above to see where files were written")
+            # DON'T rerun - let user inspect the output
     else:
         st.error("❌ Simulation Failed")
         st.code(f"STDERR:\n{res.stderr}")
