@@ -11,5 +11,9 @@ results.xml
 *.vcd
 *.fst
 
+# Ignore Generated Logs and Test Data
+logs/
+data/processed_batch.csv
+
 # Ignore Mac System Files
 .DS_Store
