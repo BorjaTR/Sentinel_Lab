@@ -12,7 +12,12 @@ from .schema import SentinelTx, Opcode
 
 @dataclass
 class BaselineMetrics:
-    """Metrics computed from actual mainnet transaction data."""
+    """
+    Metrics computed from actual mainnet transaction data.
+
+    This represents the ground truth "what actually happened" for before/after
+    comparison with optimized configurations.
+    """
 
     # Transaction counts
     tx_count: int
@@ -30,8 +35,12 @@ class BaselineMetrics:
     end_timestamp: Optional[int] = None
     duration_seconds: Optional[float] = None
 
-    # Economic metrics
-    daily_net_treasury_change: Optional[float] = None  # if treasury semantics exist
+    # Economic metrics - Treasury semantics
+    # NOTE: daily_net_treasury_change is defined as:
+    # "Change in protocol treasury balance in asset0 per day under baseline config"
+    # Positive = treasury growing, Negative = treasury bleeding
+    # Computed from: (penalties - rewards) / days
+    daily_net_treasury_change: Optional[float] = None
     daily_volume_asset0: Optional[float] = None
     daily_tx_count: Optional[float] = None
 
@@ -41,9 +50,42 @@ class BaselineMetrics:
     reward_count: int = 0
     penalty_count: int = 0
 
+    # Failure metrics (optional - if detectable from data)
+    # Some protocols/datasets expose failed transactions
+    failed_tx_count: Optional[int] = None
+    failure_rate: Optional[float] = None  # failed / total (0.0 to 1.0)
+
+
+@dataclass
+class BaselinePolicy:
+    """
+    Policy for protocol-specific baseline interpretation.
+
+    Different protocols have different semantics for treasury, fees, and emissions.
+    This provides hooks for customization without changing core logic.
+    """
+    # Treasury interpretation
+    treasury_user_id: int = 0  # Which user_id represents protocol treasury
+    treasury_role: str = "treasury"  # Which role represents treasury
+
+    # Fee interpretation
+    # Should PENALTY opcodes be counted as protocol fees?
+    penalties_are_fees: bool = True
+    # Should REWARD opcodes be counted as protocol emissions?
+    rewards_are_emissions: bool = True
+
 
 class BaselineAnalyzer:
     """Analyze real transaction data to compute baseline metrics."""
+
+    def __init__(self, policy: Optional[BaselinePolicy] = None):
+        """
+        Initialize analyzer with optional protocol-specific policy.
+
+        Args:
+            policy: Protocol-specific interpretation rules (default: standard DePIN)
+        """
+        self.policy = policy or BaselinePolicy()
 
     def compute(self, txs: List[SentinelTx]) -> BaselineMetrics:
         """

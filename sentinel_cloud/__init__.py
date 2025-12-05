@@ -39,7 +39,8 @@ from .client import (
 )
 from .baseline import (
     BaselineAnalyzer,
-    BaselineMetrics
+    BaselineMetrics,
+    BaselinePolicy
 )
 
 __all__ = [
@@ -80,6 +81,7 @@ __all__ = [
     # Baseline Analysis (Phase A)
     'BaselineAnalyzer',
     'BaselineMetrics',
+    'BaselinePolicy',
 ]
 
 __version__ = '0.3.0'
