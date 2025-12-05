@@ -37,6 +37,10 @@ from .client import (
     SimulationResult,
     SweepResult
 )
+from .baseline import (
+    BaselineAnalyzer,
+    BaselineMetrics
+)
 
 __all__ = [
     # I/O functions
@@ -72,6 +76,10 @@ __all__ = [
     'SentinelClient',
     'SimulationResult',
     'SweepResult',
+
+    # Baseline Analysis (Phase A)
+    'BaselineAnalyzer',
+    'BaselineMetrics',
 ]
 
 __version__ = '0.3.0'

@@ -559,3 +559,45 @@ class SentinelClient:
         )
 
         return SweepResult(experiment_result)
+
+    def compute_baseline(
+        self,
+        scenario: Union[str, Path],
+        mapper: str = "solana"
+    ) -> 'BaselineMetrics':
+        """
+        Compute baseline metrics from actual transaction data (no simulation).
+
+        This analyzes real mainnet transactions to establish ground truth
+        for before/after comparisons.
+
+        Args:
+            scenario: Path to transaction CSV file
+            mapper: Protocol mapper ('solana', 'evm', 'depin', etc.)
+
+        Returns:
+            BaselineMetrics with actual transaction statistics
+
+        Example:
+            >>> client = SentinelClient()
+            >>> baseline = client.compute_baseline("data/solana.csv")
+            >>> print(f"Actual volume: ${baseline.total_volume_asset0:,.0f}")
+            >>> print(f"Actual fee rate: {baseline.avg_fee_rate_asset0:.2f} bps")
+        """
+        from .io import load_and_normalize
+        from .baseline import BaselineAnalyzer
+
+        # Load and normalize transactions
+        if not Path(scenario).exists():
+            raise FileNotFoundError(f"Scenario file not found: {scenario}")
+
+        txs = load_and_normalize(
+            csv_path=str(scenario),
+            mapper=mapper,
+            num_users=1024,
+            validate=True
+        )
+
+        # Compute baseline
+        analyzer = BaselineAnalyzer()
+        return analyzer.compute(txs)
