@@ -249,11 +249,56 @@ def test_comparison_preserves_references():
     )
 
     engine = ComparisonEngine()
-    result = engine.compare(baseline, optimized_run)
+    result = engine.compare(baseline, optimized_run, "opt")
 
     # Should preserve original objects
     assert result.baseline is baseline
-    assert result.optimized is optimized_run
+    assert result.optimized_run is optimized_run
+    assert result.is_improvement is True  # 2000 > 1000
+
+
+def test_is_improvement_flag():
+    """Test is_improvement flag for both positive and negative cases."""
+    baseline = BaselineMetrics(
+        tx_count=1000,
+        total_volume_asset0=100000.0,
+        total_volume_asset1=0.0,
+        total_fees_asset0=2000.0,
+    )
+
+    engine = ComparisonEngine()
+
+    # Test improvement case
+    good_run = RunResult(
+        config=Config(name="good", fee_bps_asset0=50),
+        wall_time_seconds=10.0,
+        success=True,
+        metrics={'rev_usdc': 2500.0}  # Better
+    )
+    good_result = engine.compare(baseline, good_run, "good")
+    assert good_result.is_improvement is True
+    assert "WORSE" not in good_result.summary()
+
+    # Test worse case
+    bad_run = RunResult(
+        config=Config(name="bad", fee_bps_asset0=10),
+        wall_time_seconds=10.0,
+        success=True,
+        metrics={'rev_usdc': 1500.0}  # Worse
+    )
+    bad_result = engine.compare(baseline, bad_run, "bad")
+    assert bad_result.is_improvement is False
+    assert "WORSE" in bad_result.summary()
+
+    # Test equal case (counts as improvement)
+    equal_run = RunResult(
+        config=Config(name="equal", fee_bps_asset0=40),
+        wall_time_seconds=10.0,
+        success=True,
+        metrics={'rev_usdc': 2000.0}  # Equal
+    )
+    equal_result = engine.compare(baseline, equal_run, "equal")
+    assert equal_result.is_improvement is True  # >= baseline
 
 
 if __name__ == "__main__":

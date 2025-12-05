@@ -20,16 +20,24 @@ class ComparisonResult:
 
     This is the "show me the money" object - quantifies exactly how much
     better an optimized config performs vs what actually happened.
+
+    Carries raw objects so Phase C (Death Clock) and Phase D (Safety Scanner)
+    can attach additional analysis without reshuffling data.
     """
 
+    # Raw source objects - Phase C/D/E will need these
     baseline: BaselineMetrics
-    optimized: RunResult
+    optimized_run: RunResult
+    optimized_config_label: str
 
-    # Revenue comparison - The headline number
+    # Revenue comparison - The headline numbers
     baseline_revenue_asset0: float
     optimized_revenue_asset0: float
     additional_revenue_asset0: float
     pct_improvement_revenue: float
+
+    # Is this actually better?
+    is_improvement: bool  # True if optimized >= baseline (even if both zero)
 
     # Failure rate comparison (if available)
     baseline_failure_rate: Optional[float] = None
@@ -41,9 +49,6 @@ class ComparisonResult:
     optimized_runway_days: Optional[float] = None
     runway_extension_days: Optional[float] = None
 
-    # Config details
-    optimized_config_label: str = ""
-
     def summary(self) -> str:
         """
         Generate one-line executive summary.
@@ -51,6 +56,13 @@ class ComparisonResult:
         Returns:
             Human-readable summary of improvement
         """
+        if not self.is_improvement:
+            return (
+                f"With {self.optimized_config_label}: "
+                f"${self.additional_revenue_asset0:,.0f}/day "
+                f"({self.pct_improvement_revenue:+.1f}%) - WORSE than baseline"
+            )
+
         return (
             f"With {self.optimized_config_label}: "
             f"+${self.additional_revenue_asset0:,.0f}/day "
@@ -117,6 +129,9 @@ class ComparisonEngine:
             else 0.0
         )
 
+        # Is this actually better?
+        is_improvement = optimized_revenue >= baseline_revenue
+
         # Failure rate comparison (if available)
         baseline_failure_rate = baseline.failure_rate
         optimized_failure_rate = optimized.metrics.get('failure_rate')
@@ -127,15 +142,16 @@ class ComparisonEngine:
 
         return ComparisonResult(
             baseline=baseline,
-            optimized=optimized,
+            optimized_run=optimized,
+            optimized_config_label=config_label,
             baseline_revenue_asset0=baseline_revenue,
             optimized_revenue_asset0=optimized_revenue,
             additional_revenue_asset0=additional_revenue,
             pct_improvement_revenue=pct_improvement,
+            is_improvement=is_improvement,
             baseline_failure_rate=baseline_failure_rate,
             optimized_failure_rate=optimized_failure_rate,
             failure_delta=failure_delta,
-            optimized_config_label=config_label,
         )
 
     def find_best_improvement(
