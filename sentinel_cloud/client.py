@@ -601,3 +601,99 @@ class SentinelClient:
         # Compute baseline
         analyzer = BaselineAnalyzer()
         return analyzer.compute(txs)
+
+    def compare_baseline_vs_config(
+        self,
+        baseline: 'BaselineMetrics',
+        optimized_run: RunResult,
+        config_label: str = ""
+    ) -> 'ComparisonResult':
+        """
+        Compare baseline vs a specific optimized configuration.
+
+        This quantifies the improvement: "You're leaving $X/day on the table."
+
+        Args:
+            baseline: Baseline metrics from actual mainnet data
+            optimized_run: Simulation result from optimized config
+            config_label: Human-readable config label (e.g., "50 bps")
+
+        Returns:
+            ComparisonResult with before/after metrics
+
+        Example:
+            >>> client = SentinelClient()
+            >>> baseline = client.compute_baseline("data/solana.csv")
+            >>> sweep = client.sweep("data/solana.csv", fee_range=(0, 200, 25))
+            >>> best = sweep.get_optimal('revenue_usdc')
+            >>> # Get the RunResult from the experiment
+            >>> best_run = sweep._experiment_result.runs[0]
+            >>> comparison = client.compare_baseline_vs_config(baseline, best_run, "50 bps")
+            >>> print(comparison.summary())
+        """
+        from .comparison import ComparisonEngine
+
+        engine = ComparisonEngine()
+        return engine.compare(baseline, optimized_run, config_label)
+
+    def optimize_and_compare(
+        self,
+        scenario: Union[str, Path],
+        mapper: str = "solana",
+        fee_range: Optional[Tuple[int, int, int]] = None,
+        fee_list: Optional[List[int]] = None,
+    ) -> 'ComparisonResult':
+        """
+        Complete optimization pipeline: baseline → sweep → compare.
+
+        This is the high-level "show me the money" workflow.
+
+        Args:
+            scenario: Path to transaction CSV
+            mapper: Protocol mapper
+            fee_range: Fee sweep range (start, stop, step) in bps
+            fee_list: Or explicit list of fees to test
+
+        Returns:
+            ComparisonResult comparing baseline vs best optimized config
+
+        Example:
+            >>> client = SentinelClient()
+            >>> comparison = client.optimize_and_compare(
+            ...     "data/solana.csv",
+            ...     fee_range=(0, 200, 25)
+            ... )
+            >>> print(comparison.summary())
+            With 50 bps: +$1,234/day (+45.2%)
+        """
+        from .comparison import ComparisonEngine
+
+        if self.verbose:
+            print("Step 1/3: Computing baseline from actual data...")
+
+        # Step 1: Compute baseline
+        baseline = self.compute_baseline(scenario, mapper)
+
+        if self.verbose:
+            print(f"  Baseline: {baseline.tx_count:,} txs, "
+                  f"${baseline.total_volume_asset0:,.0f} volume")
+            print("\nStep 2/3: Running fee sweep...")
+
+        # Step 2: Run sweep
+        sweep_result = self.sweep(scenario, fee_range=fee_range, fee_list=fee_list, mapper=mapper)
+
+        if self.verbose:
+            print(f"  Tested {len(sweep_result.results)} configurations")
+            print("\nStep 3/3: Finding best improvement...")
+
+        # Step 3: Find best improvement
+        engine = ComparisonEngine()
+        comparison = engine.find_best_improvement(
+            baseline,
+            sweep_result._experiment_result.runs
+        )
+
+        if self.verbose:
+            print(f"\n✅ {comparison.summary()}")
+
+        return comparison

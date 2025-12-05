@@ -42,6 +42,10 @@ from .baseline import (
     BaselineMetrics,
     BaselinePolicy
 )
+from .comparison import (
+    ComparisonEngine,
+    ComparisonResult
+)
 
 __all__ = [
     # I/O functions
@@ -82,6 +86,10 @@ __all__ = [
     'BaselineAnalyzer',
     'BaselineMetrics',
     'BaselinePolicy',
+
+    # Before/After Comparison (Phase B)
+    'ComparisonEngine',
+    'ComparisonResult',
 ]
 
 __version__ = '0.3.0'
