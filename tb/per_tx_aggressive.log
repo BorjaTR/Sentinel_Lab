@@ -1,0 +1,109 @@
+rm -f results.xml
+make -f Makefile results.xml
+make[1]: Entering directory '/home/user/Sentinel_Lab/tb'
+mkdir -p sim_build
+verilator -cc --exe -Mdir sim_build -DCOCOTB_SIM=1 --top-module ledger_core --vpi --public-flat-rw --prefix Vtop -o Vtop -LDFLAGS "-Wl,-rpath,/usr/local/lib/python3.11/dist-packages/cocotb/libs -L/usr/local/lib/python3.11/dist-packages/cocotb/libs -lcocotbvpi_verilator" --assert --public --timescale 1ns/1ps /home/user/Sentinel_Lab/tb/../rtl/ledger_core.sv /usr/local/lib/python3.11/dist-packages/cocotb/share/lib/verilator/verilator.cpp
+make -C sim_build  -f Vtop.mk
+make[2]: Entering directory '/home/user/Sentinel_Lab/tb/sim_build'
+g++  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TRACE=0 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=0 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-overloaded-virtual -Wno-shadow -Wno-sign-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable       -Os -c -o verilator.o /usr/local/lib/python3.11/dist-packages/cocotb/share/lib/verilator/verilator.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TRACE=0 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=0 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-overloaded-virtual -Wno-shadow -Wno-sign-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable       -c -o verilated.o /usr/share/verilator/include/verilated.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TRACE=0 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=0 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-overloaded-virtual -Wno-shadow -Wno-sign-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable       -c -o verilated_dpi.o /usr/share/verilator/include/verilated_dpi.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TRACE=0 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=0 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-overloaded-virtual -Wno-shadow -Wno-sign-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable       -c -o verilated_vpi.o /usr/share/verilator/include/verilated_vpi.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TRACE=0 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=0 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-overloaded-virtual -Wno-shadow -Wno-sign-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable       -c -o verilated_threads.o /usr/share/verilator/include/verilated_threads.cpp
+/usr/bin/python3 /usr/share/verilator/bin/verilator_includer -DVL_INCLUDE_OPT=include Vtop.cpp Vtop___024root__DepSet_h84412442__0.cpp Vtop___024root__DepSet_heccd7ead__0.cpp Vtop__Dpi.cpp Vtop___024root__Slow.cpp Vtop___024root__DepSet_h84412442__0__Slow.cpp Vtop___024root__DepSet_heccd7ead__0__Slow.cpp Vtop__Syms.cpp > Vtop__ALL.cpp
+g++ -Os  -I.  -MMD -I/usr/share/verilator/include -I/usr/share/verilator/include/vltstd -DVM_COVERAGE=0 -DVM_SC=0 -DVM_TRACE=0 -DVM_TRACE_FST=0 -DVM_TRACE_VCD=0 -faligned-new -fcf-protection=none -Wno-bool-operation -Wno-overloaded-virtual -Wno-shadow -Wno-sign-compare -Wno-uninitialized -Wno-unused-but-set-parameter -Wno-unused-but-set-variable -Wno-unused-parameter -Wno-unused-variable       -c -o Vtop__ALL.o Vtop__ALL.cpp
+echo "" > Vtop__ALL.verilator_deplist.tmp
+Archive ar -rcs Vtop__ALL.a Vtop__ALL.o
+g++     verilator.o verilated.o verilated_dpi.o verilated_vpi.o verilated_threads.o Vtop__ALL.a   -Wl,-rpath,/usr/local/lib/python3.11/dist-packages/cocotb/libs -L/usr/local/lib/python3.11/dist-packages/cocotb/libs -lcocotbvpi_verilator  -pthread -lpthread -latomic   -o Vtop
+rm Vtop__ALL.verilator_deplist.tmp
+make[2]: Leaving directory '/home/user/Sentinel_Lab/tb/sim_build'
+rm -f results.xml
+MODULE=test_per_tx_verification TESTCASE= TOPLEVEL=ledger_core TOPLEVEL_LANG=verilog \
+         sim_build/Vtop 
+     -.--ns INFO     gpi                                ..mbed/gpi_embed.cpp:76   in set_program_name_in_venv        Did not detect Python virtual environment. Using system-wide Python interpreter
+     -.--ns INFO     gpi                                ../gpi/GpiCommon.cpp:101  in gpi_print_registered_impl       VPI registered
+     0.00ns INFO     cocotb                             Running on Verilator version 5.020 2024-01-01
+     0.00ns INFO     cocotb                             Running tests with cocotb v1.8.1 from /usr/local/lib/python3.11/dist-packages/cocotb
+     0.00ns INFO     cocotb                             Seeding Python random module with 1764781736
+     0.00ns INFO     cocotb.regression                  pytest not found, install it to enable better AssertionError messages
+     0.00ns INFO     cocotb.regression                  Found test test_per_tx_verification.test_find_divergence_point
+     0.00ns INFO     cocotb.regression                  Found test test_per_tx_verification.test_minimal_reproduction
+     0.00ns INFO     cocotb.regression                  running test_find_divergence_point (1/2)
+                                                          Execute transactions with per-transaction verification
+                                                          to find exact divergence point
+/home/user/Sentinel_Lab/tb/test_per_tx_verification.py:86: DeprecationWarning: cocotb.fork has been deprecated in favor of cocotb.start_soon and cocotb.start.
+In most cases you can simply substitute cocotb.fork with cocotb.start_soon.
+For more information about when you would want to use cocotb.start see the docs,
+https://docs.cocotb.org/en/latest/coroutines.html#concurrent-execution
+  cocotb.fork(Clock(dut.clk, 10, units="ns").start())
+    10.00ns INFO     cocotb.ledger_core                 === PER-TRANSACTION VERIFICATION: Finding Divergence Point ===
+    30.00ns ERROR    cocotb.ledger_core                 TX 0: USER A DIVERGENCE DETECTED!
+    30.00ns ERROR    cocotb.ledger_core                   User 81 USDC: HW=1000000 Model=995962 (diff=4038)
+    30.00ns ERROR    cocotb.ledger_core                   User 81 GPU:  HW=1000000 Model=1000000 (diff=0)
+    30.00ns ERROR    cocotb.ledger_core                 ================================================================================
+    30.00ns ERROR    cocotb.ledger_core                 DIVERGENCE FOUND!
+    30.00ns ERROR    cocotb.ledger_core                 ================================================================================
+    30.00ns ERROR    cocotb.ledger_core                 First divergence at transaction #0
+    30.00ns ERROR    cocotb.ledger_core                 
+    30.00ns ERROR    cocotb.ledger_core                 DIVERGING TRANSACTION:
+    30.00ns ERROR    cocotb.ledger_core                   Operation: TRANSFER
+    30.00ns ERROR    cocotb.ledger_core                   User A: 81
+    30.00ns ERROR    cocotb.ledger_core                   User B: 14
+    30.00ns ERROR    cocotb.ledger_core                   Amount 0: 4037
+    30.00ns ERROR    cocotb.ledger_core                   Amount 1: 1563
+    30.00ns ERROR    cocotb.ledger_core                   Success: True
+    30.00ns ERROR    cocotb.ledger_core                 
+    30.00ns ERROR    cocotb.ledger_core                 PREVIOUS 5 TRANSACTIONS (for context):
+    30.00ns ERROR    cocotb.ledger_core                 
+    30.00ns ERROR    cocotb.ledger_core                 VAULT STATE:
+    30.00ns ERROR    cocotb.ledger_core                   HW USDC: 0, Model USDC: 1 (diff=-1)
+    30.00ns ERROR    cocotb.ledger_core                   HW GPU:  0, Model GPU: 0 (diff=0)
+    30.00ns ERROR    cocotb.ledger_core                 ================================================================================
+    30.00ns INFO     cocotb.regression                  test_find_divergence_point failed
+                                                        Traceback (most recent call last):
+                                                          File "/home/user/Sentinel_Lab/tb/test_per_tx_verification.py", line 246, in test_find_divergence_point
+                                                            assert False, f"Divergence found at transaction {divergence_tx}"
+                                                                   ^^^^^
+                                                        AssertionError: Divergence found at transaction 0
+    30.00ns INFO     cocotb.regression                  running test_minimal_reproduction (2/2)
+                                                          Once divergence point is found, this test creates a minimal
+                                                          reproduction case with just the essential transactions
+/home/user/Sentinel_Lab/tb/test_per_tx_verification.py:260: DeprecationWarning: cocotb.fork has been deprecated in favor of cocotb.start_soon and cocotb.start.
+In most cases you can simply substitute cocotb.fork with cocotb.start_soon.
+For more information about when you would want to use cocotb.start see the docs,
+https://docs.cocotb.org/en/latest/coroutines.html#concurrent-execution
+  cocotb.fork(Clock(dut.clk, 10, units="ns").start())
+    50.00ns INFO     cocotb.ledger_core                 === MINIMAL REPRODUCTION (Update with exact failing sequence) ===
+    50.00ns INFO     cocotb.ledger_core                 Placeholder test - update with minimal failing case once found
+--- Logging error ---
+Traceback (most recent call last):
+  File "/usr/lib/python3.11/logging/__init__.py", line 1113, in emit
+    stream.write(msg + self.terminator)
+UnicodeEncodeError: 'ascii' codec can't encode character '\u2705' in position 56: ordinal not in range(128)
+Call stack:
+  File "/usr/local/lib/python3.11/dist-packages/cocotb/scheduler.py", line 384, in _react
+    self._event_loop(trigger)
+  File "/usr/local/lib/python3.11/dist-packages/cocotb/scheduler.py", line 487, in _event_loop
+    self._schedule(coro, trigger=trigger)
+  File "/usr/local/lib/python3.11/dist-packages/cocotb/scheduler.py", line 947, in _schedule
+    result = coroutine._advance(send_outcome)
+  File "/usr/local/lib/python3.11/dist-packages/cocotb/task.py", line 174, in _advance
+    return outcome.send(self._coro)
+  File "/usr/local/lib/python3.11/dist-packages/cocotb/outcomes.py", line 36, in send
+    return gen.send(self.value)
+  File "/home/user/Sentinel_Lab/tb/test_per_tx_verification.py", line 276, in test_minimal_reproduction
+    dut._log.info("\u2705 Test skipped (waiting for divergence identification)")
+Message: '\u2705 Test skipped (waiting for divergence identification)'
+Arguments: ()
+    50.00ns INFO     cocotb.regression                  test_minimal_reproduction passed
+    50.00ns INFO     cocotb.regression                  *************************************************************************************************************
+                                                        ** TEST                                                 STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s) **
+                                                        *************************************************************************************************************
+                                                        ** test_per_tx_verification.test_find_divergence_point   FAIL          30.00           0.01       4434.65  **
+                                                        ** test_per_tx_verification.test_minimal_reproduction    PASS          20.00           0.00       5120.57  **
+                                                        *************************************************************************************************************
+                                                        ** TESTS=2 PASS=1 FAIL=1 SKIP=0                                        50.00           0.03       1973.74  **
+                                                        *************************************************************************************************************
+                                                        
+- :0: Verilog $finish
+make[1]: Leaving directory '/home/user/Sentinel_Lab/tb'
