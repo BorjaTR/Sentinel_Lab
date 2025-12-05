@@ -606,7 +606,8 @@ class SentinelClient:
         self,
         baseline: 'BaselineMetrics',
         optimized_run: RunResult,
-        config_label: str = ""
+        config_label: str = "",
+        treasury_balance: Optional[float] = None
     ) -> 'ComparisonResult':
         """
         Compare baseline vs a specific optimized configuration.
@@ -617,9 +618,10 @@ class SentinelClient:
             baseline: Baseline metrics from actual mainnet data
             optimized_run: Simulation result from optimized config
             config_label: Human-readable config label (e.g., "50 bps")
+            treasury_balance: Current treasury balance for runway projection (optional)
 
         Returns:
-            ComparisonResult with before/after metrics
+            ComparisonResult with before/after metrics and optional runway projection
 
         Example:
             >>> client = SentinelClient()
@@ -628,13 +630,15 @@ class SentinelClient:
             >>> best = sweep.get_optimal('revenue_usdc')
             >>> # Get the RunResult from the experiment
             >>> best_run = sweep._experiment_result.runs[0]
-            >>> comparison = client.compare_baseline_vs_config(baseline, best_run, "50 bps")
+            >>> comparison = client.compare_baseline_vs_config(
+            ...     baseline, best_run, "50 bps", treasury_balance=100000
+            ... )
             >>> print(comparison.summary())
         """
         from .comparison import ComparisonEngine
 
         engine = ComparisonEngine()
-        return engine.compare(baseline, optimized_run, config_label)
+        return engine.compare(baseline, optimized_run, config_label, treasury_balance)
 
     def optimize_and_compare(
         self,
@@ -642,6 +646,7 @@ class SentinelClient:
         mapper: str = "solana",
         fee_range: Optional[Tuple[int, int, int]] = None,
         fee_list: Optional[List[int]] = None,
+        treasury_balance: Optional[float] = None
     ) -> 'ComparisonResult':
         """
         Complete optimization pipeline: baseline → sweep → compare.
@@ -653,6 +658,7 @@ class SentinelClient:
             mapper: Protocol mapper
             fee_range: Fee sweep range (start, stop, step) in bps
             fee_list: Or explicit list of fees to test
+            treasury_balance: Current treasury balance for runway projection (optional)
 
         Returns:
             ComparisonResult comparing baseline vs best optimized config
@@ -661,10 +667,11 @@ class SentinelClient:
             >>> client = SentinelClient()
             >>> comparison = client.optimize_and_compare(
             ...     "data/solana.csv",
-            ...     fee_range=(0, 200, 25)
+            ...     fee_range=(0, 200, 25),
+            ...     treasury_balance=100000
             ... )
             >>> print(comparison.summary())
-            With 50 bps: +$1,234/day (+45.2%)
+            With 50 bps: +$1,234/day (+45.2%) | +147 days runway
         """
         from .comparison import ComparisonEngine
 
@@ -690,10 +697,49 @@ class SentinelClient:
         engine = ComparisonEngine()
         comparison = engine.find_best_improvement(
             baseline,
-            sweep_result._experiment_result.runs
+            sweep_result._experiment_result.runs,
+            treasury_balance
         )
 
         if self.verbose:
             print(f"\n✅ {comparison.summary()}")
 
         return comparison
+
+    def compute_runway(
+        self,
+        baseline: 'BaselineMetrics',
+        treasury_balance: float,
+        optimized_metrics: Optional[dict] = None
+    ) -> 'RunwayResult':
+        """
+        Compute treasury runway projection from baseline metrics.
+
+        This answers: "When do we run out of money?"
+
+        Args:
+            baseline: Baseline metrics with daily_net_treasury_change
+            treasury_balance: Current treasury balance in asset0
+            optimized_metrics: Optional metrics dict from optimized config
+
+        Returns:
+            RunwayResult with baseline and optional optimized runway projections
+
+        Example:
+            >>> client = SentinelClient()
+            >>> baseline = client.compute_baseline("data/solana.csv")
+            >>> runway = client.compute_runway(baseline, treasury_balance=100000)
+            >>> if runway.baseline_runway_days:
+            ...     print(f"Treasury depletes in {runway.baseline_runway_days:.0f} days")
+            ...     print(f"Death date: {runway.baseline_death_date}")
+            ... else:
+            ...     print("Treasury is sustainable!")
+        """
+        from .death_clock import RunwayProjector
+
+        projector = RunwayProjector()
+        return projector.compute_from_baseline(
+            baseline_metrics=baseline,
+            optimized_metrics=optimized_metrics,
+            treasury_balance=treasury_balance
+        )

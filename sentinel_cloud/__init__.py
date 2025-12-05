@@ -46,6 +46,11 @@ from .comparison import (
     ComparisonEngine,
     ComparisonResult
 )
+from .death_clock import (
+    RunwayProjector,
+    RunwayInputs,
+    RunwayResult
+)
 
 __all__ = [
     # I/O functions
@@ -90,6 +95,11 @@ __all__ = [
     # Before/After Comparison (Phase B)
     'ComparisonEngine',
     'ComparisonResult',
+
+    # Death Clock / Runway Projection (Phase C)
+    'RunwayProjector',
+    'RunwayInputs',
+    'RunwayResult',
 ]
 
 __version__ = '0.3.0'

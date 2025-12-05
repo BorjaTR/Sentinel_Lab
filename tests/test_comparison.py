@@ -301,5 +301,196 @@ def test_is_improvement_flag():
     assert equal_result.is_improvement is True  # >= baseline
 
 
+def test_comparison_with_runway_projection():
+    """Test comparison with runway projection when treasury_balance provided."""
+    baseline = BaselineMetrics(
+        tx_count=1000,
+        total_volume_asset0=100000.0,
+        total_volume_asset1=0.0,
+        total_fees_asset0=1000.0,
+        daily_net_treasury_change=-500.0,  # Losing $500/day
+    )
+
+    optimized_run = RunResult(
+        config=Config(name="opt", fee_bps_asset0=50),
+        wall_time_seconds=10.0,
+        success=True,
+        metrics={
+            'rev_usdc': 2000.0,
+            'daily_net_treasury_change': 200.0  # Earning $200/day!
+        }
+    )
+
+    engine = ComparisonEngine()
+    result = engine.compare(baseline, optimized_run, "50 bps", treasury_balance=100000.0)
+
+    # Should have revenue improvement
+    assert result.additional_revenue_asset0 == 1000.0
+
+    # Should have runway projection
+    assert result.baseline_runway_days == pytest.approx(200.0)  # 100k / 500 = 200 days
+    assert result.optimized_runway_days is None  # Sustainable (positive change)
+    assert result.runway_extension_days == float('inf')  # Infinite extension!
+
+
+def test_comparison_runway_both_finite():
+    """Test runway when both baseline and optimized have finite runway."""
+    baseline = BaselineMetrics(
+        tx_count=1000,
+        total_volume_asset0=100000.0,
+        total_volume_asset1=0.0,
+        total_fees_asset0=1000.0,
+        daily_net_treasury_change=-500.0,  # Dying
+    )
+
+    optimized_run = RunResult(
+        config=Config(name="opt", fee_bps_asset0=50),
+        wall_time_seconds=10.0,
+        success=True,
+        metrics={
+            'rev_usdc': 1500.0,
+            'daily_net_treasury_change': -250.0  # Still dying, but slower
+        }
+    )
+
+    engine = ComparisonEngine()
+    result = engine.compare(baseline, optimized_run, "50 bps", treasury_balance=100000.0)
+
+    # Baseline: 200 days runway
+    assert result.baseline_runway_days == pytest.approx(200.0)
+    # Optimized: 400 days runway (100k / 250)
+    assert result.optimized_runway_days == pytest.approx(400.0)
+    # Extension: +200 days
+    assert result.runway_extension_days == pytest.approx(200.0)
+
+
+def test_comparison_runway_without_treasury_balance():
+    """Test that runway is not computed if treasury_balance not provided."""
+    baseline = BaselineMetrics(
+        tx_count=1000,
+        total_volume_asset0=100000.0,
+        total_volume_asset1=0.0,
+        total_fees_asset0=1000.0,
+        daily_net_treasury_change=-500.0,
+    )
+
+    optimized_run = RunResult(
+        config=Config(name="opt", fee_bps_asset0=50),
+        wall_time_seconds=10.0,
+        success=True,
+        metrics={'rev_usdc': 2000.0}
+    )
+
+    engine = ComparisonEngine()
+    result = engine.compare(baseline, optimized_run, "50 bps")  # No treasury_balance
+
+    # Should have revenue comparison
+    assert result.additional_revenue_asset0 == 1000.0
+
+    # Should NOT have runway projection
+    assert result.baseline_runway_days is None
+    assert result.optimized_runway_days is None
+    assert result.runway_extension_days is None
+
+
+def test_comparison_summary_with_runway():
+    """Test summary includes runway when available."""
+    baseline = BaselineMetrics(
+        tx_count=1000,
+        total_volume_asset0=100000.0,
+        total_volume_asset1=0.0,
+        total_fees_asset0=1000.0,
+        daily_net_treasury_change=-500.0,
+    )
+
+    optimized_run = RunResult(
+        config=Config(name="opt", fee_bps_asset0=50),
+        wall_time_seconds=10.0,
+        success=True,
+        metrics={
+            'rev_usdc': 2000.0,
+            'daily_net_treasury_change': -250.0
+        }
+    )
+
+    engine = ComparisonEngine()
+    result = engine.compare(baseline, optimized_run, "50 bps", treasury_balance=100000.0)
+
+    summary = result.summary()
+    assert "50 bps" in summary
+    assert "+$1,000" in summary  # Revenue improvement
+    assert "+200 days runway" in summary  # Runway extension
+
+
+def test_comparison_summary_infinite_runway():
+    """Test summary handles infinite runway extension."""
+    baseline = BaselineMetrics(
+        tx_count=1000,
+        total_volume_asset0=100000.0,
+        total_volume_asset1=0.0,
+        total_fees_asset0=1000.0,
+        daily_net_treasury_change=-500.0,
+    )
+
+    optimized_run = RunResult(
+        config=Config(name="opt", fee_bps_asset0=50),
+        wall_time_seconds=10.0,
+        success=True,
+        metrics={
+            'rev_usdc': 2000.0,
+            'daily_net_treasury_change': 200.0  # Sustainable!
+        }
+    )
+
+    engine = ComparisonEngine()
+    result = engine.compare(baseline, optimized_run, "50 bps", treasury_balance=100000.0)
+
+    summary = result.summary()
+    assert "∞" in summary or "sustainable" in summary.lower()
+
+
+def test_find_best_improvement_with_runway():
+    """Test find_best_improvement includes runway when treasury_balance provided."""
+    baseline = BaselineMetrics(
+        tx_count=1000,
+        total_volume_asset0=100000.0,
+        total_volume_asset1=0.0,
+        total_fees_asset0=1000.0,
+        daily_net_treasury_change=-500.0,
+    )
+
+    runs = [
+        RunResult(
+            config=Config(name="low", fee_bps_asset0=25),
+            wall_time_seconds=10.0,
+            success=True,
+            metrics={
+                'rev_usdc': 1500.0,
+                'daily_net_treasury_change': -300.0
+            }
+        ),
+        RunResult(
+            config=Config(name="best", fee_bps_asset0=50),
+            wall_time_seconds=10.0,
+            success=True,
+            metrics={
+                'rev_usdc': 2500.0,
+                'daily_net_treasury_change': 100.0  # Sustainable!
+            }
+        ),
+    ]
+
+    engine = ComparisonEngine()
+    result = engine.find_best_improvement(baseline, runs, treasury_balance=100000.0)
+
+    # Should pick best revenue (2500)
+    assert result.optimized_revenue_asset0 == 2500.0
+
+    # Should have runway projection
+    assert result.baseline_runway_days == pytest.approx(200.0)
+    assert result.optimized_runway_days is None  # Sustainable
+    assert result.runway_extension_days == float('inf')
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

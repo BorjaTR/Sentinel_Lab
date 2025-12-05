@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import Optional
 from .baseline import BaselineMetrics
 from .experiment import RunResult
+from .death_clock import RunwayProjector, RunwayInputs
 
 
 @dataclass
@@ -49,25 +50,41 @@ class ComparisonResult:
     optimized_runway_days: Optional[float] = None
     runway_extension_days: Optional[float] = None
 
-    def summary(self) -> str:
+    def summary(self, include_runway: bool = True) -> str:
         """
         Generate one-line executive summary.
+
+        Args:
+            include_runway: Include runway extension in summary if available
 
         Returns:
             Human-readable summary of improvement
         """
+        # Base revenue summary
         if not self.is_improvement:
-            return (
+            msg = (
                 f"With {self.optimized_config_label}: "
                 f"${self.additional_revenue_asset0:,.0f}/day "
                 f"({self.pct_improvement_revenue:+.1f}%) - WORSE than baseline"
             )
+        else:
+            msg = (
+                f"With {self.optimized_config_label}: "
+                f"+${self.additional_revenue_asset0:,.0f}/day "
+                f"({self.pct_improvement_revenue:+.1f}%)"
+            )
 
-        return (
-            f"With {self.optimized_config_label}: "
-            f"+${self.additional_revenue_asset0:,.0f}/day "
-            f"({self.pct_improvement_revenue:+.1f}%)"
-        )
+        # Add runway extension if available
+        if include_runway and self.runway_extension_days is not None:
+            if self.runway_extension_days == float('inf'):
+                msg += " | Runway: ∞ (sustainable)"
+            elif self.runway_extension_days > 0:
+                msg += f" | +{self.runway_extension_days:.0f} days runway"
+            elif self.runway_extension_days < 0:
+                msg += f" | {self.runway_extension_days:.0f} days runway (worse)"
+            # else: extension == 0, both sustainable, don't clutter message
+
+        return msg
 
 
 class ComparisonEngine:
@@ -77,7 +94,8 @@ class ComparisonEngine:
         self,
         baseline: BaselineMetrics,
         optimized: RunResult,
-        config_label: str = ""
+        config_label: str = "",
+        treasury_balance: Optional[float] = None
     ) -> ComparisonResult:
         """
         Compare baseline metrics vs optimized simulation result.
@@ -88,15 +106,16 @@ class ComparisonEngine:
             baseline: Actual mainnet metrics (what really happened)
             optimized: Simulation result from optimized config
             config_label: Human-readable config description (e.g., "50 bps")
+            treasury_balance: Current treasury balance for runway projection (optional)
 
         Returns:
-            ComparisonResult with improvement metrics
+            ComparisonResult with improvement metrics and optional runway projection
 
         Example:
             >>> engine = ComparisonEngine()
-            >>> result = engine.compare(baseline, best_run, "50 bps")
+            >>> result = engine.compare(baseline, best_run, "50 bps", treasury_balance=100000)
             >>> print(result.summary())
-            With 50 bps: +$1,234/day (+45.2%)
+            With 50 bps: +$1,234/day (+45.2%) | +147 days runway
         """
         # Extract baseline revenue
         # Use fees if available, else try to estimate from volume/treasury change
@@ -140,6 +159,30 @@ class ComparisonEngine:
         if baseline_failure_rate is not None and optimized_failure_rate is not None:
             failure_delta = optimized_failure_rate - baseline_failure_rate
 
+        # Runway projection (optional - only if treasury_balance provided)
+        baseline_runway_days = None
+        optimized_runway_days = None
+        runway_extension_days = None
+
+        if treasury_balance is not None:
+            # Get daily treasury changes
+            baseline_daily_change = baseline.daily_net_treasury_change or 0.0
+            optimized_daily_change = optimized.metrics.get('daily_net_treasury_change')
+
+            if optimized_daily_change is not None:
+                # Compute runway for both configs
+                projector = RunwayProjector()
+                inputs = RunwayInputs(
+                    treasury_start_asset0=treasury_balance,
+                    daily_net_change_asset0=baseline_daily_change,
+                    daily_net_change_asset0_optimized=optimized_daily_change,
+                )
+                runway_result = projector.compute_runway(inputs)
+
+                baseline_runway_days = runway_result.baseline_runway_days
+                optimized_runway_days = runway_result.optimized_runway_days
+                runway_extension_days = runway_result.runway_extension_days
+
         return ComparisonResult(
             baseline=baseline,
             optimized_run=optimized,
@@ -152,12 +195,16 @@ class ComparisonEngine:
             baseline_failure_rate=baseline_failure_rate,
             optimized_failure_rate=optimized_failure_rate,
             failure_delta=failure_delta,
+            baseline_runway_days=baseline_runway_days,
+            optimized_runway_days=optimized_runway_days,
+            runway_extension_days=runway_extension_days,
         )
 
     def find_best_improvement(
         self,
         baseline: BaselineMetrics,
-        runs: list[RunResult]
+        runs: list[RunResult],
+        treasury_balance: Optional[float] = None
     ) -> ComparisonResult:
         """
         Find the configuration with the best improvement over baseline.
@@ -165,13 +212,14 @@ class ComparisonEngine:
         Args:
             baseline: Baseline metrics
             runs: List of simulation results to compare
+            treasury_balance: Current treasury balance for runway projection (optional)
 
         Returns:
             ComparisonResult for the best configuration
 
         Example:
             >>> engine = ComparisonEngine()
-            >>> best = engine.find_best_improvement(baseline, experiment.runs)
+            >>> best = engine.find_best_improvement(baseline, experiment.runs, treasury_balance=100000)
             >>> print(f"Best config: {best.optimized_config_label}")
         """
         if not runs:
@@ -183,4 +231,4 @@ class ComparisonEngine:
         # Generate label from config
         config_label = best_run.config.name or f"{best_run.config.fee_bps_asset0} bps"
 
-        return self.compare(baseline, best_run, config_label)
+        return self.compare(baseline, best_run, config_label, treasury_balance)
