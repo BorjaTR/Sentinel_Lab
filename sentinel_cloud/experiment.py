@@ -408,10 +408,19 @@ def run_scenario(
             # No PATH set, create one
             env['PATH'] = ':'.join(required_paths)
 
-        # Debug: Log the PATH being used (will appear in error messages)
-        import sys
-        if hasattr(sys, '_called_from_test'):  # Only log in non-test mode
-            print(f"[DEBUG] Subprocess PATH: {env['PATH'][:200]}...")
+        # Detect cocotb makefiles path via Python (more reliable than cocotb-config binary)
+        # This bypasses the need for cocotb-config to be in PATH
+        try:
+            import cocotb
+            cocotb_makefiles = os.path.join(
+                os.path.dirname(cocotb.__file__),
+                'share',
+                'makefiles'
+            )
+            if os.path.exists(cocotb_makefiles):
+                env["COCOTB_MAKEFILES"] = cocotb_makefiles
+        except ImportError:
+            pass  # Will fall back to cocotb-config in Makefile
 
         env["FEE_BPS_ASSET0"] = str(config.fee_bps_asset0)
         env["FEE_BPS_ASSET1"] = str(config.fee_bps_asset1)
