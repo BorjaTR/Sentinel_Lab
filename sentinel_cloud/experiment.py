@@ -397,13 +397,21 @@ def run_scenario(
 
         # Ensure cocotb is in PATH (critical for Streamlit/dashboard execution)
         # When running from Streamlit, the PATH may not include /usr/local/bin
-        if 'PATH' in env:
-            # Add common cocotb installation paths if not already present
-            paths_to_add = ['/usr/local/bin', '/usr/bin']
-            current_paths = env['PATH'].split(':')
-            for path in paths_to_add:
-                if path not in current_paths:
-                    env['PATH'] = f"{path}:{env['PATH']}"
+        # Force inclusion of common installation paths
+        required_paths = ['/usr/local/bin', '/usr/bin', '/root/.local/bin']
+
+        if 'PATH' in env and env['PATH']:
+            existing_path = env['PATH']
+            # Prepend required paths to ensure they're found first
+            env['PATH'] = ':'.join(required_paths) + ':' + existing_path
+        else:
+            # No PATH set, create one
+            env['PATH'] = ':'.join(required_paths)
+
+        # Debug: Log the PATH being used (will appear in error messages)
+        import sys
+        if hasattr(sys, '_called_from_test'):  # Only log in non-test mode
+            print(f"[DEBUG] Subprocess PATH: {env['PATH'][:200]}...")
 
         env["FEE_BPS_ASSET0"] = str(config.fee_bps_asset0)
         env["FEE_BPS_ASSET1"] = str(config.fee_bps_asset1)
@@ -421,15 +429,40 @@ def run_scenario(
         env["SCENARIO_FILE"] = os.path.abspath(processed_file)
 
         # Run simulation
+        # Note: We need to ensure PATH is set for the shell that make uses for $(shell ...) commands
+        # Setting env alone isn't enough because $(shell cocotb-config) runs during Makefile parsing
         cmd = ["make", "-C", "tb"]
-        result = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=300)
+
+        # Ensure PATH is set in environment for subprocess
+        # This handles both the make process and any shell commands it spawns
+        result = subprocess.run(
+            cmd,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=300,
+            shell=False  # Explicitly don't use shell to avoid PATH issues
+        )
 
         if result.returncode != 0:
+            # Enhanced error message with debugging info
+            error_parts = []
+            error_parts.append(f"Simulation failed (returncode={result.returncode})")
+
+            if "cocotb-config" in result.stderr:
+                error_parts.append(f"PATH was: {env.get('PATH', 'NOT SET')[:150]}")
+                error_parts.append("cocotb-config not found - check installation")
+
+            error_parts.append(f"stderr: {result.stderr[:500]}")
+
+            if result.stdout:
+                error_parts.append(f"stdout: {result.stdout[:200]}")
+
             return RunResult(
                 config=config,
                 wall_time_seconds=time.time() - start_time,
                 success=False,
-                error_message=f"Simulation failed: {result.stderr[:200]}"
+                error_message=" | ".join(error_parts)
             )
 
         # Extract metrics from sim_stats.csv
