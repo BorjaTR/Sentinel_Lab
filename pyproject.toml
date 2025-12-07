@@ -55,7 +55,7 @@ Repository = "https://github.com/BorjaTR/Sentinel_Lab"
 "Bug Tracker" = "https://github.com/BorjaTR/Sentinel_Lab/issues"
 
 [project.scripts]
-sentinel = "sentinel_cloud.cli:main"
+sentinel = "sentinel_cloud.cli.main:app"
 
 [tool.setuptools.packages.find]
 where = ["."]

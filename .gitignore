@@ -6,6 +6,7 @@ obj_dir/
 __pycache__/
 *.pyc
 .coverage
+*.egg-info/
 
 # Ignore Simulation Results & Waveforms
 results.xml
