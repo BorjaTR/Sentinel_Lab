@@ -77,6 +77,14 @@ from .governance import (
     calculate_voting_power,
     simulate_governance
 )
+from .executive_report import (
+    RiskLevel,
+    Priority,
+    Recommendation,
+    ReportSection,
+    ExecutiveReport,
+    generate_executive_report
+)
 
 __all__ = [
     # I/O functions
@@ -152,6 +160,14 @@ __all__ = [
     'GovernanceResult',
     'calculate_voting_power',
     'simulate_governance',
+
+    # Executive Report & Narrative Layer (Phase H)
+    'RiskLevel',
+    'Priority',
+    'Recommendation',
+    'ReportSection',
+    'ExecutiveReport',
+    'generate_executive_report',
 ]
 
 __version__ = '0.3.0'
