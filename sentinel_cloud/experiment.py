@@ -394,6 +394,17 @@ def run_scenario(
 
         # Prepare environment
         env = os.environ.copy()
+
+        # Ensure cocotb is in PATH (critical for Streamlit/dashboard execution)
+        # When running from Streamlit, the PATH may not include /usr/local/bin
+        if 'PATH' in env:
+            # Add common cocotb installation paths if not already present
+            paths_to_add = ['/usr/local/bin', '/usr/bin']
+            current_paths = env['PATH'].split(':')
+            for path in paths_to_add:
+                if path not in current_paths:
+                    env['PATH'] = f"{path}:{env['PATH']}"
+
         env["FEE_BPS_ASSET0"] = str(config.fee_bps_asset0)
         env["FEE_BPS_ASSET1"] = str(config.fee_bps_asset1)
 
