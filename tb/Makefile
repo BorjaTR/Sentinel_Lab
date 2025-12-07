@@ -9,7 +9,7 @@ MODULE = test_ledger
 EXTRA_ARGS += --assert --public
 
 # Support COCOTB_MAKEFILES env var to avoid needing cocotb-config binary
-# This is critical for environments (like Streamlit) where cocotb-config isn't in PATH
+# This is critical for environments (like Streamlit) where cocotb-config isn't accessible
 ifdef COCOTB_MAKEFILES
 include $(COCOTB_MAKEFILES)/Makefile.sim
 else

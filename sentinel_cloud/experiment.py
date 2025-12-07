@@ -424,7 +424,7 @@ def run_scenario(
             pass
 
         # Method 2: Try common installation paths as fallback
-        if not cocotb_makefiles or not os.path.exists(cocotb_makefiles):
+        if not cocotb_makefiles:
             common_paths = [
                 '/usr/local/lib/python3.11/dist-packages/cocotb/share/makefiles',
                 '/usr/local/lib/python3.10/dist-packages/cocotb/share/makefiles',
@@ -435,9 +435,12 @@ def run_scenario(
                     cocotb_makefiles = path
                     break
 
-        # Set the environment variable if we found a valid path
-        if cocotb_makefiles and os.path.exists(cocotb_makefiles):
-            env["COCOTB_MAKEFILES"] = cocotb_makefiles
+        # Last resort: use the known working path even if we can't verify it exists
+        if not cocotb_makefiles:
+            cocotb_makefiles = '/usr/local/lib/python3.11/dist-packages/cocotb/share/makefiles'
+
+        # Always set it - let make fail if path is wrong
+        env["COCOTB_MAKEFILES"] = cocotb_makefiles
 
         env["FEE_BPS_ASSET0"] = str(config.fee_bps_asset0)
         env["FEE_BPS_ASSET1"] = str(config.fee_bps_asset1)
@@ -455,8 +458,6 @@ def run_scenario(
         env["SCENARIO_FILE"] = os.path.abspath(processed_file)
 
         # Run simulation
-        # Note: We need to ensure PATH is set for the shell that make uses for $(shell ...) commands
-        # Setting env alone isn't enough because $(shell cocotb-config) runs during Makefile parsing
         cmd = ["make", "-C", "tb"]
 
         # Ensure PATH is set in environment for subprocess
