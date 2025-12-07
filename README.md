@@ -252,24 +252,128 @@ gtkwave dump.vcd
 
 ---
 
+## 🐍 Sentinel Cloud SDK & CLI
+
+Sentinel Cloud provides three interfaces for tokenomics analysis:
+
+### 1. Python SDK (Programmatic)
+
+```python
+from sentinel_cloud import SentinelClient
+
+client = SentinelClient()
+
+# Quick health check (<30s)
+check = client.quick_check(
+    scenario="data/solana_day_1.csv",
+    treasury=1_000_000,
+    current_fee_bps=50,
+    emissions_per_day=50_000,
+    mapper="solana"
+)
+
+print(f"Status: {check.status.value}")
+print(f"Runway: {check.runway_days} days")
+check.print_summary()
+
+# Parameter sweep
+sweep = client.sweep(
+    scenario="data/solana_day_1.csv",
+    fee_range=(0, 200, 25),  # 0-2% in 0.25% steps
+    mapper="solana"
+)
+
+optimal = sweep.get_optimal('revenue_usdc')
+print(f"Optimal fee: {optimal.fee_bps} bps")
+```
+
+**See `examples/` for complete SDK examples.**
+
+### 2. Command Line Interface
+
+```bash
+# Quick health check
+sentinel quick-check data/solana_day_1.csv \
+    --mapper solana \
+    --treasury 1000000 \
+    --output text
+
+# Full 8-phase analysis
+sentinel analyze data/solana_day_1.csv \
+    --mapper solana \
+    --treasury 1000000 \
+    --output-dir ./reports \
+    --format markdown
+
+# Generate config
+sentinel init \
+    --scenario data/solana_day_1.csv \
+    --protocol MyProtocol \
+    --treasury 5000000
+
+# Run from config
+sentinel run-config sentinel.yaml
+```
+
+### 3. Interactive Dashboard
+
+```bash
+streamlit run dashboard_v3.py
+# Opens at http://localhost:8501
+```
+
+### Features
+
+| Feature | SDK | CLI | Dashboard |
+|---------|-----|-----|-----------|
+| Quick health check | ✅ | ✅ | ✅ |
+| Parameter sweeps | ✅ | ❌ | ✅ |
+| 8-phase analysis | ✅ | ✅ | ✅ |
+| Config-driven | ✅ | ✅ | ❌ |
+| Visual charts | ❌ | ❌ | ✅ |
+| JSON export | ✅ | ✅ | ❌ |
+| CI/CD friendly | ✅ | ✅ | ❌ |
+
+---
+
 ## 📁 Repository Structure
 
 ```
 Sentinel_Lab/
 ├── rtl/
-│   └── ledger_core.sv           # Core exchange engine (SystemVerilog)
+│   └── ledger_core.sv              # Core exchange engine (SystemVerilog)
 ├── tb/
-│   ├── test_ledger.py            # Cocotb verification testbench
-│   └── Makefile                  # Verilator build configuration
+│   ├── test_ledger.py              # Cocotb verification testbench
+│   └── Makefile                    # Verilator build configuration
 ├── model/
-│   └── ledger_model.py           # Python golden model (reference)
+│   └── ledger_model.py             # Python golden model (reference)
+├── sentinel_cloud/                 # Python SDK & Analysis Framework
+│   ├── cli/                        # Command-line interface (Phases I-J)
+│   ├── config/                     # YAML configuration (Phase J)
+│   ├── results.py                  # Enhanced result types (Phase K)
+│   ├── baseline.py                 # Phase A: Baseline analysis
+│   ├── comparison.py               # Phase B: Before/after comparison
+│   ├── death_clock.py              # Phase C: Runway projection
+│   ├── safety.py                   # Phase D: Parameter safety
+│   ├── unit_economics.py           # Phase E: Unit economics
+│   ├── concentration.py            # Phase F: Whale analytics
+│   ├── governance.py               # Phase G: Governance simulation
+│   ├── executive_report.py         # Phase H: Executive narrative
+│   └── client.py                   # High-level SentinelClient API
+├── examples/                       # SDK usage examples (Phase L)
+│   ├── 01_quickstart.py            # Basic workflow
+│   ├── 02_quick_check.py           # Health assessment
+│   ├── 03_parameter_sweep.py       # Fee optimization
+│   └── 04_config_workflow.py       # YAML configs
 ├── data/
-│   ├── solana_day_1.csv          # Real Solana mainnet transactions (50K)
-│   └── scenario_ddos.csv         # Synthetic stress test (10K)
-├── logs/
-│   └── sim_stats.csv             # Generated performance metrics
-├── run_lab.py                    # Simulation orchestrator
-└── dashboard.py                  # Streamlit analytics UI
+│   ├── solana_day_1.csv            # Real Solana mainnet transactions (50K)
+│   └── scenario_ddos.csv           # Synthetic stress test (10K)
+├── experiments/                    # Saved sweep results (for dashboard)
+├── logs/                           # Generated simulation artifacts
+│   └── sim_stats.csv               # Performance metrics
+├── run_lab.py                      # Legacy simulation orchestrator
+├── dashboard_v3.py                 # Streamlit analytics UI
+└── tests/                          # 160+ integration tests
 ```
 
 ---
