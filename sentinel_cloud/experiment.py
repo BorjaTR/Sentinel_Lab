@@ -479,30 +479,16 @@ def run_scenario(
         env["SCENARIO_FILE"] = os.path.abspath(processed_file)
 
         # Run simulation
-        # Use absolute path to tb directory to avoid working directory issues in Streamlit
-        # Try multiple methods to find tb directory
-        if hasattr(__file__, '__str__'):
-            # Method 1: Relative to this file
-            tb_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'tb'))
-        else:
-            # Method 2: Relative to current working directory
-            tb_dir = os.path.abspath('tb')
+        # Find tb directory - prefer relative to package location, fall back to hardcoded path
+        tb_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'tb'))
 
-        # Verify tb directory exists, otherwise try alternate locations
+        # If that doesn't exist (shouldn't happen in normal installation), use hardcoded path
         if not os.path.exists(tb_dir):
-            # Try from current working directory
-            tb_dir = os.path.abspath('tb')
+            tb_dir = '/home/user/Sentinel_Lab/tb'
 
+        # Final check - if still not found, try current directory
         if not os.path.exists(tb_dir):
-            # Try finding it in common locations
-            possible_dirs = [
-                '/home/user/Sentinel_Lab/tb',
-                os.path.join(os.getcwd(), 'tb'),
-            ]
-            for d in possible_dirs:
-                if os.path.exists(d):
-                    tb_dir = d
-                    break
+            tb_dir = os.path.abspath('tb')
 
         cmd = ["make", "-C", tb_dir]
 
