@@ -84,12 +84,21 @@ else:
         ]]
     else:
         # Multi-select for comparison mode
+        # Auto-select newest experiment (experiment_metadata is already sorted by time, newest first)
+        default_selection = [experiment_metadata[0]['display_name']] if experiment_metadata else []
+
         selected_names = st.sidebar.multiselect(
             "Select Experiments to Compare",
             options=[meta['display_name'] for meta in experiment_metadata],
-            default=[experiment_metadata[0]['display_name']] if experiment_metadata else [],
-            help="Choose one or more experiments to compare"
+            default=default_selection,
+            help="Choose one or more experiments to compare",
+            key="experiment_selector"  # Add key for state management
         )
+
+        # If no selection, default to newest
+        if not selected_names and experiment_metadata:
+            selected_names = [experiment_metadata[0]['display_name']]
+
         selected_experiments = [
             available_experiments[[m['display_name'] for m in experiment_metadata].index(name)]
             for name in selected_names
@@ -145,6 +154,10 @@ with st.sidebar.form("sweep_launcher"):
 
                     # Save experiment
                     saved_path = save_experiment(sweep._experiment_result, experiments_dir)
+
+                    # Clear experiment selector to force reload of newest experiment
+                    if 'experiment_selector' in st.session_state:
+                        del st.session_state['experiment_selector']
 
                     st.success(f"✅ Sweep complete!")
                     st.info(f"💾 Saved to: `{saved_path.name}`")
