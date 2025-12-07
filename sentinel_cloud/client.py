@@ -792,3 +792,82 @@ class SentinelClient:
             verbose=self.verbose
         )
 
+    def compute_unit_economics(
+        self,
+        scenario: Union[str, Path],
+        mapper: str = "solana",
+        config: Optional['Config'] = None,
+        resource_name: str = "gpu_hour",
+        resource_amount_field: str = "asset1_amount",
+        emissions_usd_per_day: Optional[float] = None
+    ) -> 'UnitEconomicsResult':
+        """
+        Compute unit economics (cost and margin per resource unit).
+
+        This answers: "Are we a business or a subsidy?"
+
+        Args:
+            scenario: Path to transaction CSV
+            mapper: Protocol mapper
+            config: Config to simulate with (default: baseline, no fees)
+            resource_name: Human-readable resource type (e.g., "gpu_hour", "gb_month")
+            resource_amount_field: SentinelTx field for resource units (default: "asset1_amount")
+            emissions_usd_per_day: Total emissions cost per day (optional)
+
+        Returns:
+            UnitEconomicsResult with revenue, emissions, and margin per unit
+
+        Example:
+            >>> client = SentinelClient()
+            >>> result = client.compute_unit_economics(
+            ...     "data/solana.csv",
+            ...     resource_name="gpu_hour",
+            ...     emissions_usd_per_day=5000
+            ... )
+            >>> print(f"Revenue: ${result.revenue_per_unit:.2f}/GPU-hour")
+            >>> print(f"Margin: ${result.net_margin_per_unit:.2f}/GPU-hour")
+        """
+        from .io import load_and_normalize
+        from .baseline import BaselineAnalyzer
+        from .unit_economics import UnitEconomicsConfig, compute_unit_economics
+        from .experiment import run_scenario, Config
+
+        # Load transactions
+        txs = load_and_normalize(
+            csv_path=str(scenario),
+            mapper=mapper,
+            num_users=1024,
+            validate=True
+        )
+
+        # Compute baseline
+        analyzer = BaselineAnalyzer()
+        baseline = analyzer.compute(txs)
+
+        # Run simulation with config (or baseline config)
+        if config is None:
+            config = Config(name="baseline", fee_bps_asset0=0)
+
+        run_result = run_scenario(
+            scenario_path=str(scenario),
+            mapper=mapper,
+            config=config,
+            verbose=False,
+            transactions=txs
+        )
+
+        # Create unit economics config
+        unit_econ_cfg = UnitEconomicsConfig(
+            resource_name=resource_name,
+            resource_amount_field=resource_amount_field
+        )
+
+        # Compute unit economics
+        return compute_unit_economics(
+            txs=txs,
+            run=run_result,
+            baseline=baseline,
+            cfg=unit_econ_cfg,
+            emissions_usd_per_day=emissions_usd_per_day
+        )
+

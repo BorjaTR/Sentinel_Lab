@@ -56,6 +56,11 @@ from .safety import (
     SafetyScanner,
     SafetyAssessment
 )
+from .unit_economics import (
+    UnitEconomicsConfig,
+    UnitEconomicsResult,
+    compute_unit_economics
+)
 
 __all__ = [
     # I/O functions
@@ -110,6 +115,11 @@ __all__ = [
     'SafetyRule',
     'SafetyScanner',
     'SafetyAssessment',
+
+    # Unit Economics (Phase E)
+    'UnitEconomicsConfig',
+    'UnitEconomicsResult',
+    'compute_unit_economics',
 ]
 
 __version__ = '0.3.0'
