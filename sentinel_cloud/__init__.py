@@ -67,6 +67,16 @@ from .concentration import (
     compute_hhi,
     compute_concentration
 )
+from .governance import (
+    GovernanceConfig,
+    Proposal,
+    VoteDistribution,
+    VotingMechanism,
+    ProposalStatus,
+    GovernanceResult,
+    calculate_voting_power,
+    simulate_governance
+)
 
 __all__ = [
     # I/O functions
@@ -132,6 +142,16 @@ __all__ = [
     'compute_gini',
     'compute_hhi',
     'compute_concentration',
+
+    # Governance Simulator (Phase G)
+    'GovernanceConfig',
+    'Proposal',
+    'VoteDistribution',
+    'VotingMechanism',
+    'ProposalStatus',
+    'GovernanceResult',
+    'calculate_voting_power',
+    'simulate_governance',
 ]
 
 __version__ = '0.3.0'
