@@ -5,6 +5,7 @@ obj_dir/
 # Ignore Python Cache
 __pycache__/
 *.pyc
+.coverage
 
 # Ignore Simulation Results & Waveforms
 results.xml
