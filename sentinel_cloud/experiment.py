@@ -419,8 +419,12 @@ def run_scenario(
             )
             if os.path.exists(cocotb_makefiles):
                 env["COCOTB_MAKEFILES"] = cocotb_makefiles
-        except ImportError:
-            pass  # Will fall back to cocotb-config in Makefile
+            else:
+                # Path detection failed - don't set the var, let Makefile use cocotb-config
+                pass
+        except ImportError as e:
+            # cocotb not importable - don't set the var, let Makefile use cocotb-config
+            pass
 
         env["FEE_BPS_ASSET0"] = str(config.fee_bps_asset0)
         env["FEE_BPS_ASSET1"] = str(config.fee_bps_asset1)
@@ -458,9 +462,9 @@ def run_scenario(
             error_parts = []
             error_parts.append(f"Simulation failed (returncode={result.returncode})")
 
-            if "cocotb-config" in result.stderr:
-                error_parts.append(f"PATH was: {env.get('PATH', 'NOT SET')[:150]}")
-                error_parts.append("cocotb-config not found - check installation")
+            if "cocotb-config" in result.stderr or "Makefile.sim" in result.stderr:
+                error_parts.append(f"PATH: {env.get('PATH', 'NOT SET')[:100]}")
+                error_parts.append(f"COCOTB_MAKEFILES: {env.get('COCOTB_MAKEFILES', 'NOT SET')}")
 
             error_parts.append(f"stderr: {result.stderr[:500]}")
 
