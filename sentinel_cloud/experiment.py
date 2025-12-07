@@ -415,11 +415,21 @@ def run_scenario(
         # Method 1: Try importing cocotb
         try:
             import cocotb
-            cocotb_makefiles = os.path.join(
+            detected_path = os.path.join(
                 os.path.dirname(cocotb.__file__),
                 'share',
                 'makefiles'
             )
+            # Only use detected path if it exists AND isn't a cross-platform mismatch
+            # (e.g., macOS path on Linux system)
+            import platform
+            if os.path.exists(detected_path):
+                # Check for cross-platform path issues
+                if platform.system() == 'Linux' and detected_path.startswith('/Users/'):
+                    # macOS path on Linux - ignore it
+                    pass
+                else:
+                    cocotb_makefiles = detected_path
         except (ImportError, AttributeError):
             pass
 
@@ -431,15 +441,16 @@ def run_scenario(
                 '/usr/lib/python3/dist-packages/cocotb/share/makefiles',
             ]
             for path in common_paths:
-                if os.path.exists(path):
-                    cocotb_makefiles = path
-                    break
+                # Don't check existence - Streamlit may have restricted filesystem access
+                # Just try the paths in order and use the first one
+                cocotb_makefiles = path
+                break
 
-        # Last resort: use the known working path even if we can't verify it exists
+        # Last resort: use the known working path
         if not cocotb_makefiles:
             cocotb_makefiles = '/usr/local/lib/python3.11/dist-packages/cocotb/share/makefiles'
 
-        # Always set it - let make fail if path is wrong
+        # Always set it - let make fail if path is actually wrong
         env["COCOTB_MAKEFILES"] = cocotb_makefiles
 
         env["FEE_BPS_ASSET0"] = str(config.fee_bps_asset0)
