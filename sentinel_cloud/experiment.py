@@ -410,6 +410,9 @@ def run_scenario(
 
         # Detect cocotb makefiles path via Python (more reliable than cocotb-config binary)
         # This bypasses the need for cocotb-config to be in PATH
+        cocotb_makefiles = None
+
+        # Method 1: Try importing cocotb
         try:
             import cocotb
             cocotb_makefiles = os.path.join(
@@ -417,14 +420,24 @@ def run_scenario(
                 'share',
                 'makefiles'
             )
-            if os.path.exists(cocotb_makefiles):
-                env["COCOTB_MAKEFILES"] = cocotb_makefiles
-            else:
-                # Path detection failed - don't set the var, let Makefile use cocotb-config
-                pass
-        except ImportError as e:
-            # cocotb not importable - don't set the var, let Makefile use cocotb-config
+        except (ImportError, AttributeError):
             pass
+
+        # Method 2: Try common installation paths as fallback
+        if not cocotb_makefiles or not os.path.exists(cocotb_makefiles):
+            common_paths = [
+                '/usr/local/lib/python3.11/dist-packages/cocotb/share/makefiles',
+                '/usr/local/lib/python3.10/dist-packages/cocotb/share/makefiles',
+                '/usr/lib/python3/dist-packages/cocotb/share/makefiles',
+            ]
+            for path in common_paths:
+                if os.path.exists(path):
+                    cocotb_makefiles = path
+                    break
+
+        # Set the environment variable if we found a valid path
+        if cocotb_makefiles and os.path.exists(cocotb_makefiles):
+            env["COCOTB_MAKEFILES"] = cocotb_makefiles
 
         env["FEE_BPS_ASSET0"] = str(config.fee_bps_asset0)
         env["FEE_BPS_ASSET1"] = str(config.fee_bps_asset1)
