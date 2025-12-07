@@ -1,0 +1,178 @@
+{
+  "scenario_path": "data/solana_day_1.csv",
+  "mapper": "solana",
+  "total_wall_time": 95.47133588790894,
+  "runs": [
+    {
+      "config": {
+        "name": "0 bps (0.00%)",
+        "fee_bps_asset0": 0,
+        "fee_bps_asset1": 0
+      },
+      "metrics": {
+        "total_tx": 50000.0,
+        "duration_ns": 500100.0,
+        "tps_million": 99.98,
+        "latency_cycles": 1.0,
+        "rev_usdc": 252343.0,
+        "rev_gpu": 0.0,
+        "vol_usdc": 528419722.0,
+        "vol_gpu": 2961311.0,
+        "engine_tps": 100000000.0,
+        "lab_tps": 1611.262141155787,
+        "num_tx": 50000.0,
+        "failure_rate": 0.0,
+        "success_count": 50000.0,
+        "failure_count": 0.0,
+        "avg_amount_asset0": 49992.36964,
+        "median_amount_asset0": 49970.0,
+        "max_amount_asset0": 100000.0
+      },
+      "wall_time_seconds": 31.03157377243042,
+      "success": true,
+      "error_message": "",
+      "time_series": [],
+      "role_metrics": {
+        "client": {
+          "role": "client",
+          "tx_count": 100000,
+          "revenue_earned": 2499618482.0,
+          "emissions_received": 0.0,
+          "fees_paid": 0.0,
+          "volume_usdc": 4999236964.0,
+          "avg_tx_size": 49992.36964,
+          "net_revenue": 2499618482.0
+        }
+      },
+      "treasury_state": {
+        "balance_usdc": 1000000.0,
+        "revenue_rate_per_day": 0.0,
+        "burn_rate_per_day": 0.0,
+        "runway_days": null,
+        "is_sustainable": true,
+        "depletion_risk": "\u2705 Sustainable",
+        "fees_collected": 0.0,
+        "emissions_sent": 0.0
+      },
+      "treasury_config": {
+        "initial_balance_usdc": 1000000.0,
+        "simulation_days": 0.031747685185185184,
+        "has_emissions": false
+      }
+    },
+    {
+      "config": {
+        "name": "100 bps (1.00%)",
+        "fee_bps_asset0": 100,
+        "fee_bps_asset1": 0
+      },
+      "metrics": {
+        "total_tx": 50000.0,
+        "duration_ns": 500100.0,
+        "tps_million": 99.98,
+        "latency_cycles": 1.0,
+        "rev_usdc": 252343.0,
+        "rev_gpu": 0.0,
+        "vol_usdc": 528419722.0,
+        "vol_gpu": 2961311.0,
+        "engine_tps": 100000000.0,
+        "lab_tps": 1580.1484448269412,
+        "num_tx": 50000.0,
+        "failure_rate": 0.0,
+        "success_count": 50000.0,
+        "failure_count": 0.0,
+        "avg_amount_asset0": 49992.36964,
+        "median_amount_asset0": 49970.0,
+        "max_amount_asset0": 100000.0
+      },
+      "wall_time_seconds": 31.64259672164917,
+      "success": true,
+      "error_message": "",
+      "time_series": [],
+      "role_metrics": {
+        "client": {
+          "role": "client",
+          "tx_count": 100000,
+          "revenue_earned": 2499618482.0,
+          "emissions_received": 0.0,
+          "fees_paid": 24996184.819999985,
+          "volume_usdc": 4999236964.0,
+          "avg_tx_size": 49992.36964,
+          "net_revenue": 2474622297.18
+        }
+      },
+      "treasury_state": {
+        "balance_usdc": 25996184.819999985,
+        "revenue_rate_per_day": 787338814.6000725,
+        "burn_rate_per_day": 0.0,
+        "runway_days": null,
+        "is_sustainable": true,
+        "depletion_risk": "\u2705 Sustainable",
+        "fees_collected": 24996184.819999985,
+        "emissions_sent": 0.0
+      },
+      "treasury_config": {
+        "initial_balance_usdc": 1000000.0,
+        "simulation_days": 0.031747685185185184,
+        "has_emissions": false
+      }
+    },
+    {
+      "config": {
+        "name": "200 bps (2.00%)",
+        "fee_bps_asset0": 200,
+        "fee_bps_asset1": 0
+      },
+      "metrics": {
+        "total_tx": 50000.0,
+        "duration_ns": 500100.0,
+        "tps_million": 99.98,
+        "latency_cycles": 1.0,
+        "rev_usdc": 252343.0,
+        "rev_gpu": 0.0,
+        "vol_usdc": 528419722.0,
+        "vol_gpu": 2961311.0,
+        "engine_tps": 100000000.0,
+        "lab_tps": 1531.1876409797976,
+        "num_tx": 50000.0,
+        "failure_rate": 0.0,
+        "success_count": 50000.0,
+        "failure_count": 0.0,
+        "avg_amount_asset0": 49992.36964,
+        "median_amount_asset0": 49970.0,
+        "max_amount_asset0": 100000.0
+      },
+      "wall_time_seconds": 32.654391050338745,
+      "success": true,
+      "error_message": "",
+      "time_series": [],
+      "role_metrics": {
+        "client": {
+          "role": "client",
+          "tx_count": 100000,
+          "revenue_earned": 2499618482.0,
+          "emissions_received": 0.0,
+          "fees_paid": 49992369.63999997,
+          "volume_usdc": 4999236964.0,
+          "avg_tx_size": 49992.36964,
+          "net_revenue": 2449626112.36
+        }
+      },
+      "treasury_state": {
+        "balance_usdc": 50992369.63999997,
+        "revenue_rate_per_day": 1574677629.200145,
+        "burn_rate_per_day": 0.0,
+        "runway_days": null,
+        "is_sustainable": true,
+        "depletion_risk": "\u2705 Sustainable",
+        "fees_collected": 49992369.63999997,
+        "emissions_sent": 0.0
+      },
+      "treasury_config": {
+        "initial_balance_usdc": 1000000.0,
+        "simulation_days": 0.031747685185185184,
+        "has_emissions": false
+      }
+    }
+  ]
+}
