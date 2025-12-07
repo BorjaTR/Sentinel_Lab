@@ -8,10 +8,8 @@ MODULE = test_ledger
 # --public: Allow Cocotb to read internal signals/memory (Crucial for the Swarm check)
 EXTRA_ARGS += --assert --public
 
-# Support COCOTB_MAKEFILES env var to avoid needing cocotb-config binary
-# This is critical for environments (like Streamlit) where cocotb-config isn't accessible
-ifdef COCOTB_MAKEFILES
-include $(COCOTB_MAKEFILES)/Makefile.sim
-else
-include $(shell cocotb-config --makefiles)/Makefile.sim
-endif
+# Hardcode cocotb path to avoid environment issues
+# This works around Streamlit subprocess environment isolation
+-include /usr/local/lib/python3.11/dist-packages/cocotb/share/makefiles/Makefile.sim
+-include /usr/local/lib/python3.10/dist-packages/cocotb/share/makefiles/Makefile.sim
+-include /usr/lib/python3/dist-packages/cocotb/share/makefiles/Makefile.sim
