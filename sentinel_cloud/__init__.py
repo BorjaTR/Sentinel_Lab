@@ -51,6 +51,11 @@ from .death_clock import (
     RunwayInputs,
     RunwayResult
 )
+from .safety import (
+    SafetyRule,
+    SafetyScanner,
+    SafetyAssessment
+)
 
 __all__ = [
     # I/O functions
@@ -100,6 +105,11 @@ __all__ = [
     'RunwayProjector',
     'RunwayInputs',
     'RunwayResult',
+
+    # Parameter Safety Scanner (Phase D)
+    'SafetyRule',
+    'SafetyScanner',
+    'SafetyAssessment',
 ]
 
 __version__ = '0.3.0'

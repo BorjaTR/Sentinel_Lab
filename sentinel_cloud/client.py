@@ -743,3 +743,52 @@ class SentinelClient:
             optimized_metrics=optimized_metrics,
             treasury_balance=treasury_balance
         )
+
+    def scan_safety(
+        self,
+        scenario: Union[str, Path],
+        mapper: str = "solana",
+        param_name: str = "fee_bps_asset0",
+        values: Optional[List[float]] = None,
+        treasury_balance: Optional[float] = None
+    ) -> List['SafetyAssessment']:
+        """
+        Scan parameter values and classify as GREEN/YELLOW/RED.
+
+        This answers: "Can we touch this parameter without dying?"
+
+        Args:
+            scenario: Path to transaction CSV
+            mapper: Protocol mapper
+            param_name: Parameter to scan (default: "fee_bps_asset0")
+            values: List of values to test (default: [0, 25, 50, 75, 100])
+            treasury_balance: Current treasury balance for runway projection
+
+        Returns:
+            List of SafetyAssessment, one per value tested
+
+        Example:
+            >>> client = SentinelClient()
+            >>> results = client.scan_safety(
+            ...     "data/solana.csv",
+            ...     values=[0, 25, 50, 75, 100],
+            ...     treasury_balance=100000
+            ... )
+            >>> safe = [r for r in results if r.overall_status == "green"]
+            >>> print(f"Safe configs: {len(safe)}/{len(results)}")
+        """
+        from .safety import SafetyScanner
+
+        if values is None:
+            values = [0, 25, 50, 75, 100]
+
+        scanner = SafetyScanner()
+        return scanner.scan_param(
+            scenario=str(scenario),
+            mapper=mapper,
+            param_name=param_name,
+            values=values,
+            treasury_balance=treasury_balance,
+            verbose=self.verbose
+        )
+
