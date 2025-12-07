@@ -61,6 +61,12 @@ from .unit_economics import (
     UnitEconomicsResult,
     compute_unit_economics
 )
+from .concentration import (
+    ConcentrationMetrics,
+    compute_gini,
+    compute_hhi,
+    compute_concentration
+)
 
 __all__ = [
     # I/O functions
@@ -120,6 +126,12 @@ __all__ = [
     'UnitEconomicsConfig',
     'UnitEconomicsResult',
     'compute_unit_economics',
+
+    # Whale & Fairness Analytics (Phase F)
+    'ConcentrationMetrics',
+    'compute_gini',
+    'compute_hhi',
+    'compute_concentration',
 ]
 
 __version__ = '0.3.0'
