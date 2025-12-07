@@ -336,31 +336,261 @@ def analyze(csv_path: str, mapper: str, treasury: float, output_dir: str, output
 
 
 @app.command()
-def init():
+@click.option('--scenario', type=click.Path(exists=True), help='Path to transaction data CSV')
+@click.option('--protocol', help='Protocol name')
+@click.option('--treasury', type=float, help='Treasury balance in USD')
+@click.option('--output', type=click.Path(), default='sentinel.yaml', help='Output config file path')
+def init(scenario: Optional[str], protocol: Optional[str], treasury: Optional[float], output: str):
     """
     Generate starter config file.
 
     Creates sentinel.yaml with default configuration.
 
-    Example:
+    Examples:
       sentinel init
+      sentinel init --scenario data.csv --protocol helium --treasury 1000000
     """
-    click.echo("Config generation coming in Phase J-2...")
+    from sentinel_cloud.config import SentinelConfig, generate_default_config
+
+    try:
+        # Check if config already exists
+        if Path(output).exists():
+            if not click.confirm(f"{output} already exists. Overwrite?"):
+                click.echo("Aborted.")
+                return
+
+        # Interactive mode if no parameters provided
+        if not scenario:
+            scenario = click.prompt("Path to transaction data CSV", type=str)
+
+        if not protocol:
+            protocol = click.prompt("Protocol name", type=str, default="my_protocol")
+
+        if not treasury:
+            treasury = click.prompt("Treasury balance (USD)", type=float, default=1000000)
+
+        # Generate config
+        config = generate_default_config(scenario, protocol, treasury)
+
+        # Save to file
+        config.to_yaml(output)
+
+        click.echo("")
+        click.echo(f"✅ Created {output} with default configuration")
+        click.echo("")
+        click.echo("Next steps:")
+        click.echo(f"  1. Edit {output} to customize settings")
+        click.echo(f"  2. Run: sentinel run-config {output}")
+        click.echo("")
+
+    except Exception as e:
+        click.echo(f"❌ ERROR: {str(e)}", err=True)
+        sys.exit(1)
 
 
 @app.command('run-config')
 @click.argument('config_path', type=click.Path(exists=True), default='sentinel.yaml', required=False)
-def run_config(config_path: str):
+@click.option('--dry-run', is_flag=True, help='Validate config without running analysis')
+def run_config(config_path: str, dry_run: bool):
     """
     Execute analysis from config file.
 
     Runs full pipeline based on YAML configuration.
 
-    Example:
+    Examples:
       sentinel run-config sentinel.yaml
+      sentinel run-config --dry-run
     """
-    click.echo(f"Config-driven execution coming in Phase J-2...")
-    click.echo(f"Will use config: {config_path}")
+    import os
+    from datetime import datetime
+    from sentinel_cloud.config import SentinelConfig
+    from sentinel_cloud.comparison import ComparisonEngine
+    from sentinel_cloud.safety import SafetyScanner
+    from sentinel_cloud.unit_economics import UnitEconomicsConfig, compute_unit_economics
+    from sentinel_cloud.executive_report import generate_executive_report
+
+    try:
+        # Load and validate config
+        click.echo("Loading configuration...")
+        config = SentinelConfig.from_yaml(config_path)
+        click.echo(f"✓ Loaded {config_path}")
+        click.echo("")
+
+        # Run validations
+        warnings = config.validate_all()
+        if warnings:
+            click.echo("Configuration Warnings:")
+            for warning in warnings:
+                click.echo(f"  {warning}")
+            click.echo("")
+
+        # Dry run mode - just validate and exit
+        if dry_run:
+            click.echo("✅ Configuration is valid")
+            click.echo("")
+            click.echo("Configuration Summary:")
+            click.echo(f"  Protocol: {config.protocol.name}")
+            click.echo(f"  Treasury: ${config.protocol.treasury_balance:,.0f}")
+            click.echo(f"  Scenario: {config.scenario.path}")
+            click.echo(f"  Mapper: {config.scenario.mapper}")
+            click.echo(f"  Output: {config.output.directory}")
+            click.echo("")
+            click.echo("Remove --dry-run to execute analysis.")
+            return
+
+        # Create output directory
+        os.makedirs(config.output.directory, exist_ok=True)
+
+        click.echo("=" * 60)
+        click.echo(f"SENTINEL CLOUD - ANALYSIS: {config.protocol.name}")
+        click.echo("=" * 60)
+        click.echo("")
+
+        # Step 1: Load scenario data
+        click.echo("[1/5] Loading scenario data...")
+        txs = load_and_normalize(config.scenario.path, mapper=config.scenario.mapper)
+        click.echo(f"      Loaded {len(txs):,} transactions ✓")
+        click.echo("")
+
+        # Step 2: Baseline Analysis (Phase A)
+        click.echo("[2/5] Phase A: Baseline Analysis...")
+        analyzer = BaselineAnalyzer()
+        baseline = analyzer.analyze(txs)
+        click.echo(f"      Revenue: ${baseline.revenue:,.0f}")
+        click.echo(f"      Volume: ${baseline.volume:,.0f}")
+        click.echo(f"      Transactions: {baseline.tx_count:,} ✓")
+        click.echo("")
+
+        # Step 3: Runway Projection (Phase C)
+        click.echo("[3/5] Phase C: Runway Projection...")
+        projector = RunwayProjector()
+        runway_inputs = RunwayInputs(
+            treasury_balance=config.protocol.treasury_balance,
+            daily_treasury_change=baseline.daily_treasury_change or 0,
+            revenue=baseline.revenue,
+            total_emissions=baseline.total_emissions
+        )
+        runway = projector.compute(runway_inputs)
+
+        if runway.is_sustainable:
+            click.echo(f"      Status: ✅ Sustainable (revenue > costs)")
+        else:
+            click.echo(f"      Runway: {runway.runway_days:.0f} days")
+
+        # Step 4: Safety Scanner (Phase D)
+        click.echo("")
+        click.echo("[4/5] Phase D: Safety Scanner...")
+        safety_warnings = []
+
+        if runway.runway_days and runway.runway_days < config.safety.min_runway_days:
+            safety_warnings.append(f"Runway ({runway.runway_days:.0f}d) below threshold ({config.safety.min_runway_days}d)")
+
+        if safety_warnings:
+            for warning in safety_warnings:
+                click.echo(f"      ⚠️  {warning}")
+        else:
+            click.echo(f"      ✅ All safety checks passed")
+        click.echo("")
+
+        # Step 5: Unit Economics (if configured)
+        unit_econ_result = None
+        if config.protocol.emissions_per_day:
+            click.echo("[5/5] Phase E: Unit Economics...")
+            try:
+                uec = UnitEconomicsConfig(resource_name="transaction")
+                unit_econ_result = compute_unit_economics(
+                    txs, baseline.__dict__, baseline.__dict__, uec, config.protocol.emissions_per_day
+                )
+                if unit_econ_result.net_margin_per_unit and unit_econ_result.net_margin_per_unit > 0:
+                    click.echo(f"      Margin per unit: ${unit_econ_result.net_margin_per_unit:.4f} ✅")
+                else:
+                    click.echo(f"      Margin per unit: ${unit_econ_result.net_margin_per_unit:.4f} ⚠️")
+            except Exception as e:
+                click.echo(f"      Skipped (error: {str(e)})")
+        else:
+            click.echo("[5/5] Phase E: Unit Economics... Skipped (no emissions_per_day configured)")
+        click.echo("")
+
+        # Generate Executive Report
+        click.echo("Generating executive report...")
+        report = generate_executive_report(
+            scenario_name=config.protocol.name,
+            baseline_metrics={
+                'revenue': baseline.revenue,
+                'volume': baseline.volume,
+                'tx_count': baseline.tx_count
+            },
+            runway_results={
+                'runway_days': runway.runway_days,
+                'is_sustainable': runway.is_sustainable
+            },
+            unit_economics=unit_econ_result.__dict__ if unit_econ_result else None
+        )
+
+        # Save reports
+        timestamp = datetime.now().strftime("%Y-%m-%d")
+        base_filename = f"{config.protocol.name}_{timestamp}"
+
+        for fmt in config.output.formats:
+            if fmt == 'markdown':
+                output_path = os.path.join(config.output.directory, f"{base_filename}.md")
+                with open(output_path, 'w') as f:
+                    f.write(report.format())
+                click.echo(f"      Saved: {output_path} ✓")
+
+            elif fmt == 'json':
+                output_path = os.path.join(config.output.directory, f"{base_filename}.json")
+                with open(output_path, 'w') as f:
+                    import json as json_lib
+                    json_lib.dump({
+                        'baseline': {
+                            'revenue': baseline.revenue,
+                            'volume': baseline.volume,
+                            'tx_count': baseline.tx_count
+                        },
+                        'runway': {
+                            'runway_days': runway.runway_days,
+                            'is_sustainable': runway.is_sustainable
+                        },
+                        'status': report.overall_status,
+                        'risk_level': report.overall_risk.value
+                    }, f, indent=2)
+                click.echo(f"      Saved: {output_path} ✓")
+
+        click.echo("")
+        click.echo("=" * 60)
+        click.echo("ANALYSIS COMPLETE")
+        click.echo("=" * 60)
+        click.echo("")
+
+        # Display summary
+        if safety_warnings:
+            click.echo(f"⚠️  SAFETY WARNINGS:")
+            for warning in safety_warnings:
+                click.echo(f"    - {warning}")
+            click.echo("")
+
+        click.echo(f"Overall Status: {report.overall_status.upper()}")
+        click.echo(f"Risk Level: {report.overall_risk.value.upper()}")
+        click.echo("")
+        click.echo(f"Bottom Line: {report.bottom_line}")
+        click.echo("")
+        click.echo("Reports saved:")
+        for fmt in config.output.formats:
+            click.echo(f"  → {config.output.directory}/{base_filename}.{fmt}")
+        click.echo("")
+
+    except FileNotFoundError as e:
+        click.echo(f"❌ ERROR: {str(e)}", err=True)
+        sys.exit(1)
+    except ValueError as e:
+        click.echo(f"❌ VALIDATION ERROR: {str(e)}", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"❌ ERROR: {str(e)}", err=True)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
 
 
 if __name__ == '__main__':
