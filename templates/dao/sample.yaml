@@ -1,0 +1,39 @@
+name: Sample DAO
+type: dao
+chain: ethereum
+website: https://example.com
+governance_forum: https://forum.example.com
+
+treasury:
+  holdings:
+    - symbol: TOKEN
+      amount: 1000000000
+      current_price_usd: 0.50
+      is_native: true
+    - symbol: USDC
+      amount: 10000000
+      current_price_usd: 1.0
+      is_stable: true
+
+revenue_streams:
+  - name: protocol_fees
+    monthly_usd: 500000
+    description: Protocol fee revenue
+    confidence: high
+
+cost_streams:
+  - name: team
+    monthly_usd: 800000
+    description: Core team and contributors
+    is_discretionary: false
+  - name: grants
+    monthly_usd: 1200000
+    description: Ecosystem grants
+    is_discretionary: true
+
+data_sources:
+  - https://example.com/treasury
+  - https://dune.com/example
+
+last_updated: "2025-01-15"
+notes: Sample protocol for testing
