@@ -480,7 +480,30 @@ def run_scenario(
 
         # Run simulation
         # Use absolute path to tb directory to avoid working directory issues in Streamlit
-        tb_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'tb'))
+        # Try multiple methods to find tb directory
+        if hasattr(__file__, '__str__'):
+            # Method 1: Relative to this file
+            tb_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'tb'))
+        else:
+            # Method 2: Relative to current working directory
+            tb_dir = os.path.abspath('tb')
+
+        # Verify tb directory exists, otherwise try alternate locations
+        if not os.path.exists(tb_dir):
+            # Try from current working directory
+            tb_dir = os.path.abspath('tb')
+
+        if not os.path.exists(tb_dir):
+            # Try finding it in common locations
+            possible_dirs = [
+                '/home/user/Sentinel_Lab/tb',
+                os.path.join(os.getcwd(), 'tb'),
+            ]
+            for d in possible_dirs:
+                if os.path.exists(d):
+                    tb_dir = d
+                    break
+
         cmd = ["make", "-C", tb_dir]
 
         # Ensure PATH is set in environment for subprocess
@@ -498,8 +521,10 @@ def run_scenario(
             # Enhanced error message with debugging info
             error_parts = []
             error_parts.append(f"Simulation failed (returncode={result.returncode})")
+            error_parts.append(f"tb_dir: {tb_dir}")
+            error_parts.append(f"tb_dir exists: {os.path.exists(tb_dir)}")
 
-            if "cocotb-config" in result.stderr or "Makefile.sim" in result.stderr:
+            if "cocotb-config" in result.stderr or "Makefile.sim" in result.stderr or "makefile" in result.stderr.lower():
                 cocotb_path = env.get('COCOTB_MAKEFILES', 'NOT SET')
                 error_parts.append(f"COCOTB_MAKEFILES: {cocotb_path}")
 
