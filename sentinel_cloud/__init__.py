@@ -37,6 +37,11 @@ from .client import (
     SimulationResult,
     SweepResult
 )
+from .results import (
+    QuickCheckResult,
+    AnalysisResult,
+    HealthStatus
+)
 from .baseline import (
     BaselineAnalyzer,
     BaselineMetrics,
@@ -120,6 +125,11 @@ __all__ = [
     'SentinelClient',
     'SimulationResult',
     'SweepResult',
+
+    # Enhanced SDK Result Types (Phase K)
+    'QuickCheckResult',
+    'AnalysisResult',
+    'HealthStatus',
 
     # Baseline Analysis (Phase A)
     'BaselineAnalyzer',
