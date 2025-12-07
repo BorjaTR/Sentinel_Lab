@@ -450,6 +450,16 @@ def run_scenario(
         if not cocotb_makefiles:
             cocotb_makefiles = '/usr/local/lib/python3.11/dist-packages/cocotb/share/makefiles'
 
+        # Verify the path and Makefile.sim exist before setting
+        makefile_sim = os.path.join(cocotb_makefiles, 'Makefile.sim')
+        if not os.path.exists(makefile_sim):
+            # Try to find it in alternate locations
+            import glob
+            possible_locations = glob.glob('/usr/*/lib/python*/dist-packages/cocotb/share/makefiles/Makefile.sim')
+            possible_locations += glob.glob('/root/.local/lib/python*/site-packages/cocotb/share/makefiles/Makefile.sim')
+            if possible_locations:
+                cocotb_makefiles = os.path.dirname(possible_locations[0])
+
         # Always set it - let make fail if path is actually wrong
         env["COCOTB_MAKEFILES"] = cocotb_makefiles
 
@@ -488,8 +498,21 @@ def run_scenario(
             error_parts.append(f"Simulation failed (returncode={result.returncode})")
 
             if "cocotb-config" in result.stderr or "Makefile.sim" in result.stderr:
-                error_parts.append(f"PATH: {env.get('PATH', 'NOT SET')[:100]}")
-                error_parts.append(f"COCOTB_MAKEFILES: {env.get('COCOTB_MAKEFILES', 'NOT SET')}")
+                cocotb_path = env.get('COCOTB_MAKEFILES', 'NOT SET')
+                error_parts.append(f"COCOTB_MAKEFILES: {cocotb_path}")
+
+                # Check if the path exists from Python's perspective
+                if cocotb_path != 'NOT SET':
+                    makefile_exists = os.path.exists(os.path.join(cocotb_path, 'Makefile.sim'))
+                    error_parts.append(f"Makefile.sim exists (from Python): {makefile_exists}")
+
+                    # List what's actually in that directory
+                    if os.path.exists(cocotb_path):
+                        try:
+                            files = os.listdir(cocotb_path)[:5]
+                            error_parts.append(f"Files in dir: {files}")
+                        except:
+                            error_parts.append("Cannot list directory")
 
             error_parts.append(f"stderr: {result.stderr[:500]}")
 
