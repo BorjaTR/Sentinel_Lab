@@ -479,7 +479,9 @@ def run_scenario(
         env["SCENARIO_FILE"] = os.path.abspath(processed_file)
 
         # Run simulation
-        cmd = ["make", "-C", "tb"]
+        # Use absolute path to tb directory to avoid working directory issues in Streamlit
+        tb_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'tb'))
+        cmd = ["make", "-C", tb_dir]
 
         # Ensure PATH is set in environment for subprocess
         # This handles both the make process and any shell commands it spawns
