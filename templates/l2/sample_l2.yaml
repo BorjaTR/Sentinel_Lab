@@ -1,0 +1,55 @@
+name: Sample L2
+type: l2
+chain: ethereum
+website: https://example-l2.com
+governance_forum: https://forum.example-l2.com
+
+treasury:
+  holdings:
+    - symbol: ETH
+      amount: 50000
+      current_price_usd: 3000
+      is_stable: false
+    - symbol: USDC
+      amount: 100000000
+      current_price_usd: 1.0
+      is_stable: true
+    - symbol: L2TOKEN
+      amount: 500000000
+      current_price_usd: 1.50
+      is_native: true
+
+revenue_streams:
+  - name: sequencer_fees
+    monthly_usd: 15000000
+    description: Transaction sequencing fees
+    confidence: high
+  - name: mev
+    monthly_usd: 3000000
+    description: MEV capture
+    confidence: medium
+
+cost_streams:
+  - name: da_costs
+    monthly_usd: 8000000
+    description: Data availability costs (posting to L1)
+    is_discretionary: false
+  - name: infrastructure
+    monthly_usd: 2000000
+    description: Sequencer and node infrastructure
+    is_discretionary: false
+  - name: team
+    monthly_usd: 3000000
+    description: Core development team
+    is_discretionary: false
+  - name: grants
+    monthly_usd: 2000000
+    description: Ecosystem development grants
+    is_discretionary: true
+
+data_sources:
+  - https://l2beat.com
+  - https://example-l2.com/economics
+
+last_updated: "2025-01-15"
+notes: Sample L2 with sequencer revenue model

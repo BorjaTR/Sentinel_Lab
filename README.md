@@ -1,338 +1,237 @@
-# Sentinel Lab: Hardware-Accelerated DePIN Exchange
+# Sentinel - Know Your Runway
 
-![Dashboard](dashboard.png)
+![Status](https://img.shields.io/badge/Status-Active-00ff41)
+![License](https://img.shields.io/badge/License-MIT-blue)
+![Python](https://img.shields.io/badge/Python-3.8+-orange)
 
-![Status](https://img.shields.io/badge/Status-Operational-00ff41)
-![Throughput](https://img.shields.io/badge/Throughput-99.98_M_TPS-blue)
-![Latency](https://img.shields.io/badge/Latency-10ns-orange)
-![Verification](https://img.shields.io/badge/Verification-Passing-success)
-
-**A hardware-accelerated settlement engine for high-frequency DePIN resource exchanges.**
-
----
-
-## 🎯 The Vision
-
-AI Agents and DePIN protocols need to trade resources (GPU time, storage, compute credits) in real-time at massive scale. Traditional solutions fail:
-- **Blockchains:** Too slow (400ms+ latency on Solana)
-- **Databases:** Untrusted, no atomic guarantees
-- **Centralized APIs:** Single point of failure
-
-**Sentinel Lab** is a hardware-accelerated **Layer 3 Exchange Sequencer** that settles atomic swaps in **10 nanoseconds** using FPGA acceleration, achieving **100M TPS** throughput with mathematical safety guarantees.
-
----
-
-## 🏗 System Architecture
-
-### Three-Layer Stack
-
-```
-┌─────────────────────────────────────────────────────┐
-│  PRODUCT LAYER: Real Data Replay & Dashboard       │
-│  - Solana mainnet transaction ingestion            │
-│  - Real-time telemetry & risk analytics            │
-│  - Exchange operations visualization                │
-└─────────────────────────────────────────────────────┘
-                         ↓
-┌─────────────────────────────────────────────────────┐
-│  VERIFICATION LAYER: Multi-Asset CRV Swarm          │
-│  - Python golden model (reference implementation)  │
-│  - Constrained random verification (10K+ txs)      │
-│  - Directed edge-case testing                      │
-│  - Conservation invariant checking                 │
-└─────────────────────────────────────────────────────┘
-                         ↓
-┌─────────────────────────────────────────────────────┐
-│  CORE ENGINE (RTL): Sentinel Exchange              │
-│  - 128-bit multi-asset portfolio store             │
-│  - Dual-port block RAM (1024 users)                │
-│  - 2-stage pipeline with hazard forwarding         │
-│  - Atomic TRANSFER and SWAP operations             │
-│  - Built-in fee engine (0.05% revenue)             │
-└─────────────────────────────────────────────────────┘
-```
-
-### Core Engine Design
-
-**Pipelined Dual-Asset Ledger** with operand forwarding to solve Read-After-Write hazards:
-
-```mermaid
-graph TD
-    A[Transaction Stream] -->|Valid/Ready| B(Stage 1: READ);
-    B -->|Hazard Detection| C{Forwarding Mux};
-    C -- Hazard --> D[Bypass: Use Previous Result];
-    C -- No Hazard --> E[RAM: Read Fresh Data];
-    D --> F(Stage 2: EXECUTE);
-    E --> F;
-    F -->|Validate & Compute| G[Fee Calculation];
-    G -->|Atomic Write| H[Dual-Port Block RAM];
-    H -.->|1-cycle latency| B;
-```
-
-**Key Innovation:** Operand forwarding enables back-to-back transactions on the same users without pipeline stalls, maintaining **1 transaction per cycle** throughput.
-
----
-
-## ⚡ Live Performance
-
-Current verified metrics from 50K Solana transaction replay:
-
-| Metric | Value | Notes |
-|--------|-------|-------|
-| **Throughput** | 99.98M TPS | 1 tx/cycle @ 200MHz |
-| **Latency** | 10ns | 2-stage pipeline depth |
-| **Capacity** | 1,024 users | Dual-port BRAM constraint |
-| **Assets** | 2 (USDC + GPU) | 128-bit wide portfolio |
-| **Safety** | 100% | Conservation laws verified |
-| **Fee Revenue** | $252K USDC | From 50K real txs |
-| **Volume** | $527M USDC | Actual mainnet replay |
-
-**vs. Traditional Systems:**
-- **40x faster** than Solana (400ms → 10ns)
-- **4000x faster** than Ethereum rollups
-- **Atomic guarantees** that databases cannot provide
-
----
-
-## 🛡 Multi-Asset Portfolio Model
-
-Each user has a **128-bit portfolio**:
-```
-[127:64] = GPU_Credits (64-bit)
-[63:0]   = USDC Balance (64-bit)
-```
-
-### Supported Operations
-
-#### 1. TRANSFER (opcode=0)
-Single-asset transfer with fee:
-```
-A.usdc -= (amount + fee)
-B.usdc += amount
-vault.usdc += fee
-```
-
-#### 2. ATOMIC_SWAP (opcode=1)
-Dual-asset exchange, all-or-nothing:
-```
-A.usdc -= (usdc_amount + fee_usdc)
-A.gpu += gpu_amount
-B.usdc += usdc_amount
-B.gpu -= (gpu_amount + fee_gpu)
-vault.usdc += fee_usdc
-vault.gpu += fee_gpu
-```
-
-**Atomicity:** Swap only commits if both parties have sufficient balances. No partial state corruption.
-
----
-
-## ✅ What's Been Built (v1.0)
-
-### Core Engine (RTL)
-- ✅ Dual-asset 128-bit portfolio store (USDC + GPU)
-- ✅ TRANSFER and ATOMIC_SWAP operations
-- ✅ 2-stage pipeline with basic forwarding
-- ✅ Fee engine (0.05% via bit-shift)
-- ✅ Conservation checks (no value leaks)
-- ✅ 1 transaction/cycle throughput
-
-### Verification Layer
-- ✅ Python golden model (reference implementation)
-- ✅ CSV scenario replay from real data
-- ✅ 50K+ Solana transaction verification
-- ✅ Balance conservation assertions
-- ✅ Fee revenue verification
-
-### Product Layer
-- ✅ Streamlit dashboard with real-time metrics
-- ✅ Solana mainnet data ingestion pipeline
-- ✅ Performance comparison charts
-- ✅ Protocol revenue tracking
-- ✅ Asset flow visualization
-
----
-
-## 🚧 Roadmap (v2.0)
-
-### Phase 1: Hardcore Verification (Week 1-2)
-**Goal:** Prove the engine is bulletproof
-
-- [ ] **128-bit forwarding extension**
-  - Verify both USDC AND GPU forward correctly in consecutive swaps
-  - Add hazard stress tests (A↔B, B↔C, C↔A chains)
-
-- [ ] **Comprehensive SVA assertions**
-  - Multi-asset conservation properties
-  - Overflow detection and prevention
-  - Atomicity guarantees (swap commits fully or not at all)
-
-- [ ] **Constrained Random Verification (CRV) Swarm**
-  - 10K+ random transactions with intentional hazards
-  - 30% back-to-back same-user collisions
-  - 20% swap chains (A↔B, B↔C patterns)
-  - Track coverage: % of users exercised, % hitting forwarding
-
-- [ ] **Directed edge-case test suite**
-  - Self-swaps (A↔A → no-op)
-  - Exact balance transfers (balance → 0)
-  - Insufficient funds (both parties underfunded)
-  - Overflow boundary tests
-
-**Deliverable:** "100K random atomic swaps processed at 100M TPS with 0 state corruption verified"
-
-### Phase 2: Production Dashboard (Week 3-4)
-**Goal:** Make the system demo-ready for protocol engineers
-
-- [ ] **Enhanced Exchange Operations View**
-  - Time-series: success rate, failure patterns
-  - Fee accumulation over time
-  - Top-10 user portfolio evolution
-
-- [ ] **Risk Analytics Tab**
-  - Liquidity depth charts
-  - Concentration risk (whale detection)
-  - Transaction volume heatmaps
-
-- [ ] **Live Comparison Benchmarks**
-  - Side-by-side: Sentinel vs Solana vs Arbitrum
-  - Latency percentiles (P50, P95, P99)
-  - Cost per transaction comparison
-
-**Deliverable:** "Interactive dashboard showing real-time exchange heartbeat"
-
-### Phase 3: Multi-Protocol Data (Week 5+)
-**Goal:** Show versatility across DePIN ecosystems
-
-- [ ] Ingest Render Network GPU trades
-- [ ] Ingest Filecoin storage deals
-- [ ] Ingest Helium IoT credit exchanges
-- [ ] Comparative analysis: which protocols benefit most?
-
-**Deliverable:** "Cross-protocol settlement engine with unified metrics"
-
----
-
-## 🛠 Quick Start
-
-### Prerequisites
-```bash
-# Install dependencies
-pip3 install cocotb==1.8.1 streamlit pandas
-apt-get install verilator  # or brew install verilator on macOS
-```
-
-### Run Simulation
-```bash
-# Test with Solana mainnet replay (50K transactions)
-python3 run_lab.py --scenario data/solana_day_1.csv
-
-# Output:
-# ✅ Simulation Complete!
-# 📊 99.98M TPS | $252K revenue | 527M volume
-```
-
-### Launch Dashboard
-```bash
-streamlit run dashboard.py
-# Opens browser at http://localhost:8501
-```
-
-### Development Workflow
-```bash
-# Run verification suite
-cd tb && make
-
-# Check for assertion violations
-grep "ASSERTION FAILED" sim_build/sim.log
-
-# View waveforms (if enabled)
-gtkwave dump.vcd
-```
-
----
-
-## 🐍 Sentinel Cloud SDK & CLI
-
-Sentinel Cloud provides three interfaces for tokenomics analysis:
-
-### 1. Python SDK (Programmatic)
-
-```python
-from sentinel_cloud import SentinelClient
-
-client = SentinelClient()
-
-# Quick health check (<30s)
-check = client.quick_check(
-    scenario="data/solana_day_1.csv",
-    treasury=1_000_000,
-    current_fee_bps=50,
-    emissions_per_day=50_000,
-    mapper="solana"
-)
-
-print(f"Status: {check.status.value}")
-print(f"Runway: {check.runway_days} days")
-check.print_summary()
-
-# Parameter sweep
-sweep = client.sweep(
-    scenario="data/solana_day_1.csv",
-    fee_range=(0, 200, 25),  # 0-2% in 0.25% steps
-    mapper="solana"
-)
-
-optimal = sweep.get_optimal('revenue_usdc')
-print(f"Optimal fee: {optimal.fee_bps} bps")
-```
-
-**See `examples/` for complete SDK examples.**
-
-### 2. Command Line Interface
+**Protocol sustainability ratings for crypto. Like Moody's, but for DAOs, L2s, and DeFi.**
 
 ```bash
-# Quick health check
-sentinel quick-check data/solana_day_1.csv \
-    --mapper solana \
-    --treasury 1000000 \
-    --output text
+$ sentinel score arbitrum.yaml
 
-# Full 8-phase analysis
-sentinel analyze data/solana_day_1.csv \
-    --mapper solana \
-    --treasury 1000000 \
-    --output-dir ./reports \
-    --format markdown
+SENTINEL SCORE: 76/100 (Grade B)
+Status: ✅ HEALTHY
 
-# Generate config
-sentinel init \
-    --scenario data/solana_day_1.csv \
-    --protocol MyProtocol \
-    --treasury 5000000
+Runway:          40/40  (infinite - profitable)
+Sustainability:  27/30  (ratio: 1.20)
+Diversification:  4/20  (revenue concentration risk)
+Trajectory:       5/10  (neutral trend)
 
-# Run from config
-sentinel run-config sentinel.yaml
+Summary: Healthy protocol with sustainable economics.
+Recommendation: Diversify revenue streams beyond sequencer fees.
 ```
 
-### 3. Interactive Dashboard
+---
+
+## 🎯 What is Sentinel?
+
+**Sentinel** is a protocol sustainability rating system that helps crypto protocols answer critical questions:
+
+- **How long can we survive** at current burn rate?
+- **Is our revenue model sustainable** or are we bleeding treasury?
+- **How risky is our revenue/treasury concentration?**
+- **Will this governance proposal put us at risk?**
+
+### Why It Matters
+
+- **80% of DAOs** will run out of money in the next 24 months
+- **Most protocols** have no idea when their treasury will hit zero
+- **Governance votes** often pass without understanding financial impact
+- **No standardized ratings** exist for protocol sustainability
+
+Sentinel provides a **0-100 score** (like a credit score) that combines:
+- **Runway** (40%): Months until treasury depletion
+- **Sustainability** (30%): Revenue/cost ratio
+- **Diversification** (20%): Revenue and treasury concentration
+- **Trajectory** (10%): Improving or declining trend
+
+---
+
+## 🚀 Quick Start
+
+### Installation
 
 ```bash
-streamlit run dashboard_v3.py
-# Opens at http://localhost:8501
+pip install -e .
 ```
 
-### Features
+### Basic Usage
 
-| Feature | SDK | CLI | Dashboard |
-|---------|-----|-----|-----------|
-| Quick health check | ✅ | ✅ | ✅ |
-| Parameter sweeps | ✅ | ❌ | ✅ |
-| 8-phase analysis | ✅ | ✅ | ✅ |
-| Config-driven | ✅ | ✅ | ❌ |
-| Visual charts | ❌ | ❌ | ✅ |
-| JSON export | ✅ | ✅ | ❌ |
-| CI/CD friendly | ✅ | ✅ | ❌ |
+**1. Score a protocol:**
+```bash
+sentinel score templates/dao/sample.yaml
+```
+
+**2. Analyze a governance proposal:**
+```bash
+sentinel proposal dao.yaml --add-cost "New Grant: 2000000"
+# Shows before/after score impact
+```
+
+**3. Generate rankings:**
+```bash
+sentinel rankings protocols/ --output html --output-file rankings.html
+# Compare multiple protocols side-by-side
+```
+
+**4. Validate a config:**
+```bash
+sentinel validate my_protocol.yaml
+```
+
+**5. Generate a template:**
+```bash
+sentinel init --template dao > my_protocol.yaml
+```
+
+---
+
+## 📊 Sentinel Score System
+
+### Score Components
+
+| Component | Weight | What It Measures |
+|-----------|--------|------------------|
+| **Runway** | 40 pts | Months until treasury depletion at current burn rate |
+| **Sustainability** | 30 pts | Revenue/Cost ratio (1.0 = break-even) |
+| **Diversification** | 20 pts | Revenue concentration + Treasury composition |
+| **Trajectory** | 10 pts | Historical trend (improving vs declining) |
+
+### Grading Scale
+
+| Grade | Score | Status | Meaning |
+|-------|-------|--------|---------|
+| **S** | 90+ | Healthy | Exceptional sustainability |
+| **A** | 80-89 | Healthy | Strong financial position |
+| **B** | 70-79 | Healthy | Solid fundamentals |
+| **C** | 55-69 | Warning | Some concerns |
+| **D** | 40-54 | Warning | Action recommended |
+| **F** | <40 | Critical | Immediate intervention needed |
+
+### Example Scores
+
+- **Healthy DAO** (79/B): Profitable, but concentrated revenue
+- **Sample DAO** (45/D): 340mo runway, but only 25% sustainability ratio
+- **Critical DAO** (10/F): 5mo runway until insolvency
+
+---
+
+## 🛠️ Protocol Configuration
+
+Sentinel uses **YAML configs** to define protocol economics:
+
+```yaml
+name: My Protocol
+type: dao  # dao, l2, dex, lending, depin, gaming, bridge
+chain: ethereum
+
+treasury:
+  holdings:
+    - symbol: USDC
+      amount: 10000000
+      current_price_usd: 1.0
+      is_stable: true
+    - symbol: TOKEN
+      amount: 500000000
+      current_price_usd: 2.00
+      is_native: true
+
+revenue_streams:
+  - name: protocol_fees
+    monthly_usd: 500000
+    description: Trading fees
+    confidence: high
+
+cost_streams:
+  - name: team
+    monthly_usd: 300000
+    description: Core team
+    is_discretionary: false
+  - name: grants
+    monthly_usd: 500000
+    description: Ecosystem grants
+    is_discretionary: true
+
+data_sources:
+  - https://dune.com/my_protocol
+last_updated: "2025-01-15"
+```
+
+**See `templates/` for examples of different protocol types.**
+
+---
+
+## 📈 Features
+
+### 1. Protocol Scoring
+Calculate 0-100 sustainability score with breakdown by component.
+
+```bash
+sentinel score protocol.yaml --verbose
+```
+
+### 2. Proposal Impact Analysis
+Simulate governance proposals before voting:
+
+```bash
+# Adding a new cost
+sentinel proposal dao.yaml --add-cost "Marketing: 200000"
+
+# Modifying existing costs
+sentinel proposal dao.yaml --modify-cost "grants: 1500000"
+
+# Adding revenue
+sentinel proposal dao.yaml --add-revenue "New Product: 500000"
+
+# Combined changes
+sentinel proposal dao.yaml \
+  --add-cost "Program: 1000000" \
+  --add-revenue "Fees: 800000"
+```
+
+**Output shows:**
+- Before/After score comparison
+- Runway impact
+- Warnings if proposal is risky
+- Alternative recommendations
+
+### 3. Protocol Rankings
+Compare multiple protocols side-by-side:
+
+```bash
+# Text table
+sentinel rankings protocols/
+
+# Markdown for docs
+sentinel rankings protocols/ --output markdown > rankings.md
+
+# HTML page for sharing
+sentinel rankings protocols/ --output html --output-file rankings.html
+
+# JSON for APIs
+sentinel rankings protocols/ --output json > rankings.json
+```
+
+### 4. Config Validation
+Ensure your protocol config is valid:
+
+```bash
+sentinel validate protocol.yaml
+```
+
+---
+
+## 🏆 Protocol Examples
+
+| Protocol | Type | Score | Grade | Status | Runway |
+|----------|------|-------|-------|--------|--------|
+| Healthy DAO | DAO | 79 | B | ✅ Healthy | ∞ (profitable) |
+| Sample L2 | L2 | 76 | B | ✅ Healthy | ∞ (profitable) |
+| Sample DEX | DEX | 69 | C | ⚠️ Warning | ∞ (profitable) |
+| Sample DAO | DAO | 45 | D | ⚠️ Warning | 340mo |
+| Critical DAO | DAO | 10 | F | 🚨 Critical | 5mo |
+
+**Full rankings:** Run `sentinel rankings templates/`
 
 ---
 
@@ -340,136 +239,305 @@ streamlit run dashboard_v3.py
 
 ```
 Sentinel_Lab/
-├── rtl/
-│   └── ledger_core.sv              # Core exchange engine (SystemVerilog)
-├── tb/
-│   ├── test_ledger.py              # Cocotb verification testbench
-│   └── Makefile                    # Verilator build configuration
-├── model/
-│   └── ledger_model.py             # Python golden model (reference)
-├── sentinel_cloud/                 # Python SDK & Analysis Framework
-│   ├── cli/                        # Command-line interface (Phases I-J)
-│   ├── config/                     # YAML configuration (Phase J)
-│   ├── results.py                  # Enhanced result types (Phase K)
-│   ├── baseline.py                 # Phase A: Baseline analysis
-│   ├── comparison.py               # Phase B: Before/after comparison
-│   ├── death_clock.py              # Phase C: Runway projection
-│   ├── safety.py                   # Phase D: Parameter safety
-│   ├── unit_economics.py           # Phase E: Unit economics
-│   ├── concentration.py            # Phase F: Whale analytics
-│   ├── governance.py               # Phase G: Governance simulation
-│   ├── executive_report.py         # Phase H: Executive narrative
-│   └── client.py                   # High-level SentinelClient API
-├── examples/                       # SDK usage examples (Phase L)
-│   ├── 01_quickstart.py            # Basic workflow
-│   ├── 02_quick_check.py           # Health assessment
-│   ├── 03_parameter_sweep.py       # Fee optimization
-│   └── 04_config_workflow.py       # YAML configs
-├── data/
-│   ├── solana_day_1.csv            # Real Solana mainnet transactions (50K)
-│   └── scenario_ddos.csv           # Synthetic stress test (10K)
-├── experiments/                    # Saved sweep results (for dashboard)
-├── logs/                           # Generated simulation artifacts
-│   └── sim_stats.csv               # Performance metrics
-├── run_lab.py                      # Legacy simulation orchestrator
-├── dashboard_v3.py                 # Streamlit analytics UI
-└── tests/                          # 160+ integration tests
+├── sentinel_cloud/           # Core Sentinel engine
+│   ├── protocol_config.py    # Universal protocol schema
+│   ├── score.py              # Scoring algorithm
+│   ├── proposal.py           # Proposal impact analyzer
+│   ├── rankings.py           # Multi-protocol rankings
+│   └── cli/
+│       └── main.py           # CLI commands
+├── templates/                # Example protocol configs
+│   ├── dao/                  # DAO examples
+│   ├── l2/                   # L2 examples
+│   └── dex/                  # DEX examples
+├── rtl/                      # Hardware acceleration (FPGA)
+│   └── ledger_core.sv        # Exchange engine (100M TPS)
+├── tb/                       # Hardware verification
+└── tests/                    # Test suite
 ```
 
 ---
 
-## 🔬 Technical Deep Dive
+## 🎓 Use Cases
 
-### Hazard Handling
-**Problem:** Back-to-back transactions on same user create Read-After-Write hazards
-```
-Cycle 1: A transfers to B (writes A's balance)
-Cycle 2: A swaps with C (reads stale A balance from RAM)
-```
+### For Protocol Teams
+- **Monitor financial health** with objective metrics
+- **Model governance proposals** before voting
+- **Communicate sustainability** to token holders
+- **Benchmark** against similar protocols
 
-**Solution:** Operand forwarding
-```systemverilog
-// Detect hazard: current tx needs previous result
-wire hazard_a = (s_user_a == r2_user_a) && r2_valid;
+### For Investors & Analysts
+- **Compare protocols** objectively across types
+- **Identify risks** early (runway, concentration)
+- **Track trajectory** over time
+- **Due diligence** for investments
 
-// Forward updated balance instead of stale RAM data
-wire [127:0] portfolio_a = hazard_a ? r2_new_port_a : portfolios[s_user_a];
-```
-
-### Fee Engine
-**Design:** Use bit-shift for 0.05% fee (no division)
-```systemverilog
-fee = amount >> 11;  // Equivalent to amount * 0.048828%
-```
-**Why 11 bits?** `1/2048 ≈ 0.0488%` close to 0.05%, avoids expensive divider.
-
-### Conservation Invariants
-**Assertion:** Total supply never changes
-```systemverilog
-property conservation_usdc;
-  sum(portfolios[*][63:0]) + vault_usdc == INITIAL_TOTAL_USDC;
-endproperty
-
-assert property (@(posedge clk) conservation_usdc);
-```
+### For Governance Participants
+- **Evaluate proposals** with financial impact
+- **Avoid risky votes** that hurt sustainability
+- **See alternatives** to maintain current runway
+- **Make informed decisions** with data
 
 ---
 
-## 🎓 Educational Value
+## 🔬 Technical Architecture
 
-This project demonstrates:
-1. **Hardware/Software Co-Design** - RTL engine with Python verification
-2. **Pipeline Hazard Resolution** - Real solution to RAW dependencies
-3. **Formal Verification** - SVA assertions for correctness proofs
-4. **Performance Engineering** - 100M TPS through careful optimization
-5. **Real-World Testing** - Mainnet data replay, not synthetic benchmarks
+Sentinel combines **software analysis** with optional **hardware acceleration**:
 
-**Use Cases:**
-- **DePIN Protocols:** Real-time resource settlement (GPU, storage, compute)
-- **HFT Infrastructure:** Atomic swap engines for trading firms
-- **L2/L3 Sequencers:** Hardware-accelerated blockchain settlement
+### Software Layer: Protocol Analysis
+- **Python SDK** for protocol scoring
+- **YAML configuration** for protocol definitions
+- **CLI tools** for quick analysis
+- **Scoring algorithms** based on financial metrics
+
+### Hardware Layer: Exchange Simulation (Optional)
+- **FPGA-accelerated** settlement engine (100M TPS)
+- **Real-time simulation** of tokenomics scenarios
+- **Hardware verification** via SystemVerilog
+- **Mainnet replay** for accuracy testing
+
+**The hardware layer enables high-speed parameter sweeps and stress testing.**
+
+See [Hardware Deep Dive](#-hardware-acceleration-optional) for details.
+
+---
+
+## 📊 Methodology
+
+### Runway Score (0-40 points)
+```
+Months >= 48:  40 points
+Months >= 36:  35 points
+Months >= 24:  30 points
+Months >= 18:  25 points
+Months >= 12:  20 points
+Months >= 6:   10 points
+Months < 3:     0 points
+```
+
+### Sustainability Score (0-30 points)
+Based on monthly revenue / monthly costs:
+```
+Ratio >= 1.5:  30 points (highly profitable)
+Ratio >= 1.2:  27 points (profitable with margin)
+Ratio >= 1.0:  24 points (break-even)
+Ratio >= 0.8:  18 points (slight deficit)
+Ratio >= 0.6:  12 points (significant deficit)
+Ratio < 0.4:    0 points (critical)
+```
+
+### Diversification Score (0-20 points)
+- **Revenue Concentration** (0-10): Uses HHI (Herfindahl-Hirschman Index)
+- **Treasury Composition** (0-10): Stablecoin vs native token ratio
+
+### Trajectory Score (0-10 points)
+Compares current vs 3-month-ago metrics:
+- Improving revenue/costs: +10 points
+- Stable: 5 points
+- Declining: 0 points
 
 ---
 
 ## 🤝 Contributing
 
 Current priorities:
-1. **128-bit forwarding verification** - Ensure multi-asset hazards are handled
-2. **CRV swarm testing** - Generate 100K+ random transactions
-3. **Dashboard enhancements** - Add live operations timeline
+1. **Protocol profiles** - Research and create configs for real protocols (Arbitrum, Optimism, Uniswap, Aave)
+2. **Historical data** - Add trajectory tracking for major protocols
+3. **Governance integration** - Pull proposals from Snapshot/Tally
+4. **Public rankings page** - Deploy to GitHub Pages
 
-See [ROADMAP](#-roadmap-v20) for full feature backlog.
+See [Issues](https://github.com/BorjaTR/Sentinel_Lab/issues) for full backlog.
 
 ---
 
-## 📊 Metrics Snapshot
+## 📚 Documentation
 
-Latest mainnet replay (50,000 Solana transactions):
+- **[Quick Start Guide](QUICKSTART.md)** - Get started in 5 minutes
+- **[Protocol Config Schema](templates/)** - YAML configuration reference
+- **[Scoring Methodology](docs/methodology.md)** - How scores are calculated
+- **[CLI Reference](docs/cli.md)** - Complete command documentation
+
+---
+
+## 🛡️ Hardware Acceleration (Optional)
+
+Sentinel includes an **FPGA-based settlement engine** for high-speed tokenomics simulation:
+
+### Performance
+- **99.98M TPS** throughput (1 tx/cycle @ 200MHz)
+- **10ns latency** (2-stage pipeline)
+- **Atomic swaps** with conservation guarantees
+- **Mainnet replay** of 50K+ Solana transactions
+
+### Architecture
 ```
-Total Transactions:    50,000
-Duration:             500,200 ns
-Throughput:           99.98 Million TPS
-Latency:              10 ns (2 cycles)
-Protocol Revenue:     $252,069 USDC
-Volume Processed:     $527,637,160 USDC + 2.9M GPU Credits
-Conservation Check:   ✅ PASSED (no value leaks)
+┌─────────────────────────────────────────────┐
+│  Python Analysis Layer (Sentinel Score)    │
+└─────────────────────────────────────────────┘
+                    ↓
+┌─────────────────────────────────────────────┐
+│  Hardware Simulation (FPGA/Verilator)      │
+│  - Multi-asset portfolio engine            │
+│  - Parameter sweep acceleration            │
+│  - Real-time stress testing                │
+└─────────────────────────────────────────────┘
+```
+
+### Running Hardware Simulations
+
+```bash
+# Install hardware dependencies
+pip install cocotb==1.8.1
+apt-get install verilator
+
+# Run simulation
+cd tb && make
+
+# View results
+python3 run_lab.py --scenario data/solana_day_1.csv
+```
+
+**Note:** Hardware simulation is optional. All core Sentinel features work without FPGA tools.
+
+---
+
+## 📊 Example Output
+
+### Sentinel Score Report
+```
+============================================================
+SENTINEL SCORE REPORT
+============================================================
+Protocol: Sample L2
+Type: L2
+Chain: ethereum
+
+SCORE: 76/100 (Grade: B)
+Status: ✅ HEALTHY
+
+BREAKDOWN
+------------------------------------------------------------
+Runway:          40/40  (∞ - profitable)
+Sustainability:  27/30  (ratio: 1.20)
+Diversification:  4/20  (concentration risk)
+Trajectory:       5/10  (neutral)
+
+SUMMARY
+------------------------------------------------------------
+Healthy protocol with sustainable economics. Minor revenue
+diversification improvements possible.
+
+TOP RECOMMENDATIONS
+------------------------------------------------------------
+1. Treasury is 90% native token. Consider diversifying to stables.
+2. Revenue highly concentrated in sequencer fees. Explore additional sources.
+
+Data sources: https://l2beat.com
+Last updated: 2025-01-15
+============================================================
+```
+
+### Proposal Impact Analysis
+```
+============================================================
+PROPOSAL IMPACT ANALYSIS
+============================================================
+Protocol: Sample DAO
+
+PROPOSED CHANGES
+------------------------------------------------------------
+ADD COST: New Initiative = $1,000,000/mo
+
+SCORE IMPACT
+------------------------------------------------------------
+Before: 45/100 (Grade D) - Warning
+After:  45/100 (Grade D) - Warning
+Change: +0 points
+
+KEY METRICS
+------------------------------------------------------------
+Runway:         340.0 months → 204.0 months
+Sustainability: 0.25 → 0.17
+
+⚠️  WARNINGS
+------------------------------------------------------------
+  ⚠️  Runway decreases by 136.0 months
+  ⚠️  Sustainability ratio falls to 17%
+
+RECOMMENDATIONS
+------------------------------------------------------------
+1. Consider adding $1,000,000/month in revenue to offset cost increases
+2. Consider phased rollout: start with 50% funding for 3 months, then evaluate
+
+ALTERNATIVES TO CONSIDER
+------------------------------------------------------------
+1. Alternative: Add 'New Initiative' at $500,000/mo (50% reduction)
+2. Alternative: Pair with new revenue stream of $1,000,000/mo to maintain runway
+============================================================
 ```
 
 ---
 
-## 📚 References
+## 🎯 Roadmap
 
-- **Verilator:** Open-source HDL simulator - https://verilator.org
-- **Cocotb:** Python-based verification framework - https://cocotb.org
-- **Solana Mainnet:** Real transaction data source
+### Phase 1-3: Core Engine ✅ COMPLETE
+- [x] Sentinel Score calculation (runway, sustainability, diversification, trajectory)
+- [x] Proposal impact analyzer
+- [x] Rankings system (HTML, markdown, JSON)
+- [x] CLI commands (score, proposal, rankings, validate, init)
+- [x] Universal protocol config schema
+
+### Phase 4: Protocol Profiles (In Progress)
+- [ ] Research and create configs for real protocols
+  - [ ] Arbitrum (L2)
+  - [ ] Optimism (L2)
+  - [ ] Uniswap (DEX)
+  - [ ] Aave (Lending)
+  - [ ] Helium (DePIN)
+- [ ] Validate with on-chain data
+- [ ] Document data sources
+
+### Phase 5: Public Rankings
+- [ ] Deploy rankings page to GitHub Pages
+- [ ] Automated updates from configs
+- [ ] Methodology documentation
+- [ ] Protocol submission guidelines
+
+### Phase 6: Governance Integration
+- [ ] Pull proposals from Snapshot
+- [ ] Auto-analyze financial impact
+- [ ] Publish impact reports
+- [ ] Discord/Telegram bots
+
+### Phase 7: Historical Tracking
+- [ ] Time-series data collection
+- [ ] Trajectory analysis improvements
+- [ ] Trend detection
+- [ ] Alerts for declining protocols
 
 ---
 
-**Built by Borja Raga**
-*Exploring the intersection of hardware acceleration and decentralized finance*
+## 💡 Why "Sentinel"?
+
+A **sentinel** stands guard, watching for threats. Sentinel watches protocol treasuries, alerting teams before it's too late.
+
+**Know your runway. Protect your protocol.**
 
 ---
 
-**Status:** v1.0 Operational | v2.0 In Development
-**License:** MIT
-**Contact:** [GitHub Issues](https://github.com/BorjaTR/Sentinel_Lab/issues)
+## 📜 License
+
+MIT License - see [LICENSE](LICENSE) for details
+
+---
+
+## 🤝 Contact
+
+- **GitHub Issues:** [BorjaTR/Sentinel_Lab](https://github.com/BorjaTR/Sentinel_Lab/issues)
+- **Author:** Borja Tarazona Raga
+
+---
+
+**Status:** v1.0 Active | Phases 1-3 Complete
+**Tagline:** Know your runway
+**Mission:** Prevent DAO treasury insolvency through objective sustainability ratings
