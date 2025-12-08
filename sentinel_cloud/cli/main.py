@@ -12,6 +12,7 @@ from sentinel_cloud.client import SentinelClient
 from sentinel_cloud.protocol_config import ProtocolConfig
 from sentinel_cloud.score import calculate_sentinel_score
 from sentinel_cloud.proposal import analyze_proposal_impact, ProposalChange
+from sentinel_cloud.rankings import generate_rankings, load_protocols_from_directory
 
 
 @click.group()
@@ -365,6 +366,83 @@ def _parse_stream_value(value: str) -> tuple[str, float]:
         return name, amount
     else:
         raise ValueError(f"Invalid format: {value}. Expected 'name: amount'")
+
+
+@app.command()
+@click.argument('directory', type=click.Path(exists=True))
+@click.option('--output', '-o', type=click.Choice(['text', 'json', 'html', 'markdown']), default='text', help='Output format')
+@click.option('--output-file', type=click.Path(), help='Output file path')
+@click.option('--title', default='Sentinel Protocol Rankings', help='Rankings title')
+def rankings(directory: str, output: str, output_file: Optional[str], title: str):
+    """
+    Generate rankings from multiple protocol configs.
+
+    Example:
+        sentinel rankings protocols/
+        sentinel rankings protocols/ --output html --output-file rankings.html
+        sentinel rankings protocols/ --output markdown > rankings.md
+    """
+    try:
+        from datetime import datetime
+        from pathlib import Path
+
+        # Load all protocols from directory
+        protocols = load_protocols_from_directory(Path(directory))
+
+        if not protocols:
+            click.echo(f"Error: No protocol configs found in {directory}", err=True)
+            raise click.Abort()
+
+        # Generate rankings
+        last_updated = datetime.now().strftime("%Y-%m-%d")
+        ranks = generate_rankings(
+            protocols,
+            title=title,
+            description=f"Comparing {len(protocols)} protocols",
+            last_updated=last_updated,
+        )
+
+        # Output
+        if output == 'json':
+            content = ranks.to_json()
+        elif output == 'html':
+            content = ranks.to_html()
+        elif output == 'markdown':
+            content = ranks.to_markdown()
+        else:
+            # Text output
+            content = []
+            content.append("=" * 60)
+            content.append(title.upper())
+            content.append("=" * 60)
+            content.append(f"Comparing {len(protocols)} protocols")
+            content.append("")
+            content.append(f"{'Rank':<6} {'Protocol':<20} {'Score':<10} {'Grade':<7} {'Status':<12} {'Runway':<12}")
+            content.append("-" * 60)
+
+            for p in ranks.protocols:
+                runway = f"{p.score.runway_months:.0f}mo" if p.score.runway_months != float('inf') else "∞"
+                status_emoji = "✅" if p.score.status == "Healthy" else "⚠️" if p.score.status == "Warning" else "🚨"
+
+                content.append(
+                    f"{p.rank:<6} {p.protocol.name:<20} {p.score.total_score:<10} "
+                    f"{p.score.grade:<7} {status_emoji} {p.score.status:<10} {runway:<12}"
+                )
+
+            content.append("=" * 60)
+            content = "\n".join(content)
+
+        # Write to file or stdout
+        if output_file:
+            with open(output_file, 'w') as f:
+                f.write(content)
+            click.echo(f"Rankings written to {output_file}")
+        else:
+            click.echo(content)
+
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        raise click.Abort()
 
 
 if __name__ == '__main__':

@@ -1,0 +1,45 @@
+name: Healthy DAO
+type: dao
+chain: ethereum
+website: https://example.com
+
+treasury:
+  holdings:
+    - symbol: TOKEN
+      amount: 500000000
+      current_price_usd: 2.00
+      is_native: true
+    - symbol: USDC
+      amount: 50000000
+      current_price_usd: 1.0
+      is_stable: true
+
+revenue_streams:
+  - name: protocol_fees
+    monthly_usd: 8000000
+    description: Protocol trading fees
+    confidence: high
+  - name: staking_fees
+    monthly_usd: 2000000
+    description: Staking revenue
+    confidence: high
+
+cost_streams:
+  - name: team
+    monthly_usd: 3000000
+    description: Core team and contributors
+    is_discretionary: false
+  - name: operations
+    monthly_usd: 1000000
+    description: Infrastructure and operations
+    is_discretionary: false
+  - name: grants
+    monthly_usd: 2000000
+    description: Ecosystem grants
+    is_discretionary: true
+
+data_sources:
+  - https://example.com/treasury
+
+last_updated: "2025-01-15"
+notes: Well-balanced protocol with strong revenue
