@@ -369,6 +369,190 @@ def _parse_stream_value(value: str) -> tuple[str, float]:
 
 
 @app.command()
+@click.argument('protocol1', type=click.Path(exists=True))
+@click.argument('protocol2', type=click.Path(exists=True))
+@click.option('--output', '-o', type=click.Choice(['text', 'json']), default='text', help='Output format')
+def compare(protocol1: str, protocol2: str, output: str):
+    """
+    Compare two protocols side-by-side.
+
+    Example:
+        sentinel compare arbitrum.yaml optimism.yaml
+        sentinel compare dao1.yaml dao2.yaml --output json
+    """
+    try:
+        # Load both protocols
+        p1 = ProtocolConfig.from_yaml(protocol1)
+        p2 = ProtocolConfig.from_yaml(protocol2)
+
+        # Calculate scores
+        s1 = calculate_sentinel_score(p1)
+        s2 = calculate_sentinel_score(p2)
+
+        if output == 'json':
+            comparison = {
+                'protocol1': {
+                    'name': p1.name,
+                    'score': s1.to_dict(),
+                    'treasury': p1.treasury.balance_usd,
+                    'monthly_revenue': p1.monthly_revenue,
+                    'monthly_costs': p1.monthly_costs,
+                },
+                'protocol2': {
+                    'name': p2.name,
+                    'score': s2.to_dict(),
+                    'treasury': p2.treasury.balance_usd,
+                    'monthly_revenue': p2.monthly_revenue,
+                    'monthly_costs': p2.monthly_costs,
+                },
+                'differences': {
+                    'score_delta': s2.total_score - s1.total_score,
+                    'runway_delta': s2.runway_months - s1.runway_months if s1.runway_months != float('inf') and s2.runway_months != float('inf') else None,
+                }
+            }
+            click.echo(json.dumps(comparison, indent=2))
+        else:
+            # Text comparison
+            click.echo("=" * 80)
+            click.echo("PROTOCOL COMPARISON")
+            click.echo("=" * 80)
+            click.echo()
+
+            # Names and types
+            click.echo(f"{'':20} {p1.name:^28} {p2.name:^28}")
+            click.echo("-" * 80)
+            click.echo(f"{'Type':20} {p1.type.value:^28} {p2.type.value:^28}")
+            click.echo(f"{'Chain':20} {p1.chain:^28} {p2.chain:^28}")
+            click.echo()
+
+            # Scores
+            click.echo("SENTINEL SCORES")
+            click.echo("-" * 80)
+            click.echo(f"{'Total Score':20} {f'{s1.total_score}/100':^28} {f'{s2.total_score}/100':^28}")
+            click.echo(f"{'Grade':20} {s1.grade:^28} {s2.grade:^28}")
+            click.echo(f"{'Status':20} {s1.status:^28} {s2.status:^28}")
+            click.echo()
+
+            # Component breakdown
+            click.echo("COMPONENT BREAKDOWN")
+            click.echo("-" * 80)
+            click.echo(f"{'Runway Score':20} {f'{s1.runway_score}/40':^28} {f'{s2.runway_score}/40':^28}")
+            click.echo(f"{'Sustainability':20} {f'{s1.sustainability_score}/30':^28} {f'{s2.sustainability_score}/30':^28}")
+            click.echo(f"{'Diversification':20} {f'{s1.diversification_score}/20':^28} {f'{s2.diversification_score}/20':^28}")
+            click.echo(f"{'Trajectory':20} {f'{s1.trajectory_score}/10':^28} {f'{s2.trajectory_score}/10':^28}")
+            click.echo()
+
+            # Key metrics
+            click.echo("KEY METRICS")
+            click.echo("-" * 80)
+
+            r1 = f"{s1.runway_months:.0f}mo" if s1.runway_months != float('inf') else "∞"
+            r2 = f"{s2.runway_months:.0f}mo" if s2.runway_months != float('inf') else "∞"
+            click.echo(f"{'Runway':20} {r1:^28} {r2:^28}")
+
+            ratio1 = f"{s1.sustainability_ratio:.2f}" if s1.sustainability_ratio != float('inf') else "∞"
+            ratio2 = f"{s2.sustainability_ratio:.2f}" if s2.sustainability_ratio != float('inf') else "∞"
+            click.echo(f"{'Sustainability':20} {ratio1:^28} {ratio2:^28}")
+
+            t1 = f"${p1.treasury.balance_usd:,.0f}"
+            t2 = f"${p2.treasury.balance_usd:,.0f}"
+            click.echo(f"{'Treasury':20} {t1:^28} {t2:^28}")
+
+            rev1 = f"${p1.monthly_revenue:,.0f}/mo"
+            rev2 = f"${p2.monthly_revenue:,.0f}/mo"
+            click.echo(f"{'Revenue':20} {rev1:^28} {rev2:^28}")
+
+            cost1 = f"${p1.monthly_costs:,.0f}/mo"
+            cost2 = f"${p2.monthly_costs:,.0f}/mo"
+            click.echo(f"{'Costs':20} {cost1:^28} {cost2:^28}")
+            click.echo()
+
+            # Winner
+            if s1.total_score > s2.total_score:
+                click.echo(f"✅ {p1.name} has a stronger sustainability profile (+{s1.total_score - s2.total_score} points)")
+            elif s2.total_score > s1.total_score:
+                click.echo(f"✅ {p2.name} has a stronger sustainability profile (+{s2.total_score - s1.total_score} points)")
+            else:
+                click.echo("🤝 Both protocols have equal sustainability scores")
+
+            click.echo("=" * 80)
+
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        raise click.Abort()
+
+
+@app.command()
+@click.argument('directory', type=click.Path(exists=True))
+@click.option('--output-file', '-o', type=click.Path(), required=True, help='Output CSV file path')
+def export(directory: str, output_file: str):
+    """
+    Export scores from multiple protocols to CSV.
+
+    Example:
+        sentinel export protocols/ --output-file scores.csv
+    """
+    try:
+        from pathlib import Path
+        import csv
+
+        # Load all protocols
+        protocols = load_protocols_from_directory(Path(directory))
+
+        if not protocols:
+            click.echo(f"Error: No protocol configs found in {directory}", err=True)
+            raise click.Abort()
+
+        # Calculate scores for all
+        results = []
+        for protocol in protocols:
+            score = calculate_sentinel_score(protocol)
+            results.append({
+                'name': protocol.name,
+                'type': protocol.type.value,
+                'chain': protocol.chain,
+                'total_score': score.total_score,
+                'grade': score.grade,
+                'status': score.status,
+                'runway_score': score.runway_score,
+                'sustainability_score': score.sustainability_score,
+                'diversification_score': score.diversification_score,
+                'trajectory_score': score.trajectory_score,
+                'runway_months': score.runway_months if score.runway_months != float('inf') else None,
+                'sustainability_ratio': score.sustainability_ratio if score.sustainability_ratio != float('inf') else None,
+                'treasury_usd': protocol.treasury.balance_usd,
+                'monthly_revenue': protocol.monthly_revenue,
+                'monthly_costs': protocol.monthly_costs,
+                'monthly_net': protocol.monthly_net,
+                'revenue_streams': len(protocol.revenue_streams),
+                'cost_streams': len(protocol.cost_streams),
+                'stables_ratio': protocol.treasury.stables_ratio,
+            })
+
+        # Sort by score
+        results.sort(key=lambda x: x['total_score'], reverse=True)
+
+        # Write CSV
+        with open(output_file, 'w', newline='') as f:
+            fieldnames = [
+                'name', 'type', 'chain', 'total_score', 'grade', 'status',
+                'runway_score', 'sustainability_score', 'diversification_score', 'trajectory_score',
+                'runway_months', 'sustainability_ratio',
+                'treasury_usd', 'monthly_revenue', 'monthly_costs', 'monthly_net',
+                'revenue_streams', 'cost_streams', 'stables_ratio'
+            ]
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(results)
+
+        click.echo(f"✅ Exported {len(results)} protocols to {output_file}")
+
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        raise click.Abort()
+
+
+@app.command()
 @click.argument('directory', type=click.Path(exists=True))
 @click.option('--output', '-o', type=click.Choice(['text', 'json', 'html', 'markdown']), default='text', help='Output format')
 @click.option('--output-file', type=click.Path(), help='Output file path')

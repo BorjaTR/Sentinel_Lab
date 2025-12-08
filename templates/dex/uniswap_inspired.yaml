@@ -1,0 +1,69 @@
+name: Uniswap-Inspired DEX
+type: dex
+chain: ethereum
+website: https://uniswap.org
+governance_forum: https://gov.uniswap.org
+
+# Note: Numbers are illustrative based on public DEX economics,
+# not exact figures from any specific protocol
+
+treasury:
+  holdings:
+    - symbol: USDC
+      amount: 150000000
+      current_price_usd: 1.0
+      is_stable: true
+    - symbol: ETH
+      amount: 50000
+      current_price_usd: 3000
+      is_stable: false
+    - symbol: UNI
+      amount: 400000000
+      current_price_usd: 8.00
+      is_native: true
+
+revenue_streams:
+  - name: protocol_fee_switch
+    monthly_usd: 8000000
+    description: Protocol fees from trading (when fee switch is on)
+    confidence: high
+  - name: frontend_fees
+    monthly_usd: 2000000
+    description: Fees from official frontend interface
+    confidence: high
+
+cost_streams:
+  - name: grants_program
+    monthly_usd: 5000000
+    description: Grants for ecosystem development, integrations, and research
+    is_discretionary: true
+  - name: core_development
+    monthly_usd: 2000000
+    description: Core protocol development and maintenance
+    is_discretionary: false
+  - name: operations
+    monthly_usd: 1000000
+    description: Operations, infrastructure, and tooling
+    is_discretionary: false
+  - name: governance_operations
+    monthly_usd: 500000
+    description: Governance infrastructure and delegation programs
+    is_discretionary: false
+  - name: security
+    monthly_usd: 500000
+    description: Security audits, bug bounties, and monitoring
+    is_discretionary: false
+
+data_sources:
+  - https://info.uniswap.org
+  - https://dune.com/uniswap
+  - https://defillama.com
+
+last_updated: "2025-01-15"
+notes: |
+  Illustrative DEX economics showing:
+  - Revenue from protocol fee switch and frontend
+  - Significant treasury (mostly native token)
+  - Positive monthly net (break-even to slightly profitable)
+  - Large grants program for ecosystem growth
+  - Balance between protocol sustainability and growth investment
