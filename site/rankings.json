@@ -1,0 +1,82 @@
+{
+  "title": "Sentinel Protocol Rankings",
+  "description": "Protocol sustainability ratings for crypto. Know your runway.",
+  "last_updated": "2025-01-15",
+  "protocols": [
+    {
+      "rank": 1,
+      "name": "Aave",
+      "type": "lending",
+      "chain": "ethereum",
+      "score": 75,
+      "grade": "A",
+      "status": "Healthy",
+      "runway_months": 313.9166666666667,
+      "sustainability_ratio": 0.7352941176470589,
+      "treasury_usd": 565050000.0,
+      "monthly_revenue": 5000000.0,
+      "monthly_costs": 6800000.0,
+      "website": "https://aave.com"
+    },
+    {
+      "rank": 2,
+      "name": "Lido",
+      "type": "depin",
+      "chain": "ethereum",
+      "score": 71,
+      "grade": "B",
+      "status": "Healthy",
+      "runway_months": 300.5263157894737,
+      "sustainability_ratio": 0.7564102564102564,
+      "treasury_usd": 285500000.0,
+      "monthly_revenue": 2950000.0,
+      "monthly_costs": 3900000.0,
+      "website": "https://lido.fi"
+    },
+    {
+      "rank": 3,
+      "name": "Arbitrum DAO",
+      "type": "dao",
+      "chain": "arbitrum",
+      "score": 45,
+      "grade": "C",
+      "status": "Warning",
+      "runway_months": 88.39485458612975,
+      "sustainability_ratio": 0.18727272727272729,
+      "treasury_usd": 790250000.0,
+      "monthly_revenue": 2060000.0,
+      "monthly_costs": 11000000.0,
+      "website": "https://arbitrum.io"
+    },
+    {
+      "rank": 4,
+      "name": "Uniswap",
+      "type": "dex",
+      "chain": "ethereum",
+      "score": 45,
+      "grade": "C",
+      "status": "Warning",
+      "runway_months": 736.25,
+      "sustainability_ratio": 0.0,
+      "treasury_usd": 4417500000.0,
+      "monthly_revenue": 0,
+      "monthly_costs": 6000000.0,
+      "website": "https://uniswap.org"
+    },
+    {
+      "rank": 5,
+      "name": "Optimism",
+      "type": "l2",
+      "chain": "optimism",
+      "score": 31,
+      "grade": "D",
+      "status": "Critical",
+      "runway_months": 17.254901960784313,
+      "sustainability_ratio": 0.17297297297297298,
+      "treasury_usd": 264000000.0,
+      "monthly_revenue": 3200000.0,
+      "monthly_costs": 18500000.0,
+      "website": "https://optimism.io"
+    }
+  ]
+}

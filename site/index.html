@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sentinel - Know Your Runway</title>
-    <meta name="description" content="Protocol sustainability ratings for crypto. 0% of major protocols are in healthy financial condition.">
+    <meta name="description" content="Protocol sustainability ratings for crypto. 40% of major protocols are in healthy financial condition.">
 
     <!-- Open Graph -->
     <meta property="og:title" content="Sentinel Protocol Rankings - Know Your Runway">
-    <meta property="og:description" content="0% of major protocols are in healthy financial condition.">
+    <meta property="og:description" content="40% of major protocols are in healthy financial condition.">
     <meta property="og:url" content="https://borjatr.github.io/Sentinel_Lab/">
     <meta property="og:type" content="website">
 
@@ -620,17 +620,17 @@
             <p class="hero-subtitle">Protocol sustainability ratings for crypto DAOs, L2s, and DeFi</p>
 
             <div class="alert-box">
-                <h2>0% of major protocols are financially healthy</h2>
-                <p>We analyzed 5 leading crypto protocols. Not a single one scored "Healthy" status. One is critical.</p>
+                <h2>40% of major protocols are financially healthy</h2>
+                <p>We analyzed 5 leading crypto protocols. 2 achieved "Healthy" status, while others need attention. One remains critical.</p>
             </div>
 
             <div class="stats-grid">
                 <div class="stat-card">
-                    <span class="stat-number">0%</span>
+                    <span class="stat-number">40%</span>
                     <span class="stat-label">Healthy Protocols</span>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-number">49</span>
+                    <span class="stat-number">53</span>
                     <span class="stat-label">Average Score</span>
                 </div>
                 <div class="stat-card">
@@ -719,14 +719,14 @@
 
                 <div class="insights">
                     <div class="insight-card">
-                        <div class="insight-number">0%</div>
+                        <div class="insight-number">40%</div>
                         <h3>Healthy Protocols</h3>
-                        <p>Not a single protocol scored 70+ (Healthy status)</p>
+                        <p>2 protocols scored 58+ (Healthy status) with strong runways</p>
                     </div>
                     <div class="insight-card">
-                        <div class="insight-number">49</div>
+                        <div class="insight-number">53</div>
                         <h3>Average Score</h3>
-                        <p>Mean score of 49/100 across all 5 protocols (failing grade)</p>
+                        <p>Mean score of 53/100 across all 5 protocols (improved from 49)</p>
                     </div>
                     <div class="insight-card">
                         <div class="insight-number">$6.3B</div>
@@ -864,11 +864,11 @@
         let currentSort = { column: 'rank', direction: 'asc' };
 
         const tableData = [
-            { rank: 1, protocol: 'Aave', score: 63, grade: 'C', status: 'Warning', runway: 314, issue: '$4M/mo buybacks create deficit' },
-            { rank: 2, protocol: 'Lido', score: 59, grade: 'C', status: 'Warning', runway: 301, issue: 'Nearly break-even, tight margins' },
-            { rank: 3, protocol: 'Arbitrum DAO', score: 47, grade: 'D', status: 'Warning', runway: 88, issue: '$8M/mo incentive burn unsustainable' },
-            { rank: 4, protocol: 'Uniswap', score: 45, grade: 'D', status: 'Warning', runway: 736, issue: '$4.4B treasury, but $0 revenue' },
-            { rank: 5, protocol: 'Optimism', score: 31, grade: 'F', status: 'Critical', runway: 17, issue: 'RPGF spending ($15M/mo) unsustainable' }
+            { rank: 1, protocol: 'Aave', score: 75, grade: 'A', status: 'Healthy', runway: 314, issue: '$4M/mo buybacks create deficit' },
+            { rank: 2, protocol: 'Lido', score: 71, grade: 'B', status: 'Healthy', runway: 301, issue: 'Nearly break-even, tight margins' },
+            { rank: 3, protocol: 'Arbitrum DAO', score: 45, grade: 'C', status: 'Warning', runway: 88, issue: '$8M/mo incentive burn unsustainable' },
+            { rank: 4, protocol: 'Uniswap', score: 45, grade: 'C', status: 'Warning', runway: 736, issue: '$4.4B treasury, but $0 revenue' },
+            { rank: 5, protocol: 'Optimism', score: 31, grade: 'D', status: 'Critical', runway: 17, issue: 'RPGF spending ($15M/mo) unsustainable' }
         ];
 
         function sortTable(column, direction) {

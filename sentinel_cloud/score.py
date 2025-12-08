@@ -49,56 +49,78 @@ def calculate_runway_score(runway_months: float) -> int:
     """
     Calculate runway score (0-40 points).
 
+    Crypto-calibrated: 10+ years is effectively infinite in this industry.
+    Bitcoin is 15 years old, Ethereum 9 years. Most DAOs are 2-4 years old.
+
     Args:
         runway_months: Months of runway at current burn rate
 
     Returns:
         Score from 0-40
     """
-    if runway_months >= 48:
-        return 40
-    elif runway_months >= 36:
-        return 35
-    elif runway_months >= 24:
-        return 30
-    elif runway_months >= 18:
-        return 25
-    elif runway_months >= 12:
-        return 20
-    elif runway_months >= 9:
-        return 15
-    elif runway_months >= 6:
-        return 10
-    elif runway_months >= 3:
-        return 5
+    if runway_months == float('inf'):
+        return 40  # Profitable protocol
+    if runway_months >= 120:  # 10+ years
+        return 40  # Effectively infinite in crypto
+    elif runway_months >= 60:  # 5-10 years
+        return 36  # Very healthy
+    elif runway_months >= 36:  # 3-5 years
+        return 30  # Healthy
+    elif runway_months >= 24:  # 2-3 years
+        return 24  # Stable
+    elif runway_months >= 12:  # 1-2 years
+        return 18  # Caution
+    elif runway_months >= 6:  # 6-12 months
+        return 10  # Warning
+    elif runway_months >= 3:  # 3-6 months
+        return 5  # Severe
     else:
-        return 0
+        return 0  # <3 months = Critical
 
 
-def calculate_sustainability_score(sustainability_ratio: float) -> int:
+def calculate_sustainability_score(sustainability_ratio: float, runway_months: float = 0) -> int:
     """
     Calculate sustainability score (0-30 points).
 
+    Sustainability with runway context: A 0.70 ratio with 300-month runway
+    is healthier than a 1.0 ratio with 12-month runway.
+
     Args:
         sustainability_ratio: monthly_revenue / monthly_costs
+        runway_months: Months of runway (for context bonus)
 
     Returns:
         Score from 0-30
     """
+    # Base score from ratio
     if sustainability_ratio >= 1.5:
-        return 30  # Highly profitable
+        base = 30  # Highly profitable
     elif sustainability_ratio >= 1.2:
-        return 27  # Profitable with margin
+        base = 27  # Profitable with margin
     elif sustainability_ratio >= 1.0:
-        return 24  # Break-even
+        base = 24  # Break-even
     elif sustainability_ratio >= 0.8:
-        return 18  # Slight deficit
-    elif sustainability_ratio >= 0.6:
-        return 12  # Significant deficit
-    elif sustainability_ratio >= 0.4:
-        return 6  # Severe deficit
+        base = 20  # Slight deficit
+    elif sustainability_ratio >= 0.7:
+        base = 16  # Manageable deficit
+    elif sustainability_ratio >= 0.5:
+        base = 10  # Significant deficit
+    elif sustainability_ratio >= 0.3:
+        base = 5  # Severe deficit
+    elif sustainability_ratio > 0:
+        base = 2  # Critical but has revenue
     else:
-        return 0  # Critical
+        base = 0  # Zero revenue
+
+    # Runway context bonus (max +8 points)
+    # Long runway + decent ratio = significant bonus
+    # In crypto, 25 years of runway changes everything
+    if runway_months >= 120 and sustainability_ratio >= 0.60:
+        base = min(30, base + 8)
+    elif runway_months >= 60 and sustainability_ratio >= 0.50:
+        base = min(30, base + 4)
+
+    return base
 
 
 def calculate_revenue_concentration_score(revenue_streams: list[RevenueStream]) -> int:
@@ -240,26 +262,40 @@ def calculate_trajectory_score(
 
 
 def score_to_grade(score: int) -> str:
-    """Convert numeric score to letter grade."""
-    if score >= 90:
+    """
+    Convert numeric score to letter grade.
+
+    Crypto-calibrated thresholds:
+    - S: Exceptional (profitable + diversified)
+    - A: Healthy (long runway + decent sustainability)
+    - B: Stable (multi-year runway)
+    - C: Caution (needs attention)
+    - D: Warning (sustainability issues)
+    - F: Critical (immediate risk)
+    """
+    if score >= 85:
         return "S"
-    elif score >= 80:
+    elif score >= 72:
         return "A"
-    elif score >= 70:
+    elif score >= 58:
         return "B"
-    elif score >= 55:
+    elif score >= 44:
         return "C"
-    elif score >= 40:
+    elif score >= 30:
         return "D"
     else:
         return "F"
 
 
 def score_to_status(score: int) -> str:
-    """Convert numeric score to status."""
-    if score >= 70:
+    """
+    Convert numeric score to status.
+
+    Crypto-calibrated thresholds aligned with B grade.
+    """
+    if score >= 58:
         return "Healthy"
-    elif score >= 45:
+    elif score >= 35:
         return "Warning"
     else:
         return "Critical"
@@ -280,13 +316,13 @@ def generate_summary(score: int, protocol: ProtocolConfig) -> str:
     else:
         ratio_text = f"sustainability ratio at {ratio:.0%}"
 
-    if score >= 80:
+    if score >= 72:
         return f"Strong position. {runway_text} with sustainable economics."
-    elif score >= 70:
+    elif score >= 58:
         return f"Healthy. {runway_text}, minor optimizations possible."
-    elif score >= 55:
+    elif score >= 44:
         return f"Caution advised. {runway_text}, {ratio_text}."
-    elif score >= 40:
+    elif score >= 30:
         return f"At risk. {runway_text}. Intervention recommended."
     else:
         return f"Critical. {runway_text} until insolvency without immediate action."
@@ -349,7 +385,7 @@ def calculate_sentinel_score(protocol: ProtocolConfig) -> SentinelScoreResult:
     """
     # Calculate component scores
     r_score = calculate_runway_score(protocol.runway_months)
-    s_score = calculate_sustainability_score(protocol.sustainability_ratio)
+    s_score = calculate_sustainability_score(protocol.sustainability_ratio, protocol.runway_months)
     d_score = calculate_diversification_score(protocol)
     t_score = calculate_trajectory_score(protocol)
 
