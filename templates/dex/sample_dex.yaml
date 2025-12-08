@@ -1,0 +1,51 @@
+name: Sample DEX
+type: dex
+chain: ethereum
+website: https://example-dex.com
+governance_forum: https://forum.example-dex.com
+
+treasury:
+  holdings:
+    - symbol: USDC
+      amount: 80000000
+      current_price_usd: 1.0
+      is_stable: true
+    - symbol: ETH
+      amount: 20000
+      current_price_usd: 3000
+      is_stable: false
+    - symbol: DEXTOKEN
+      amount: 1000000000
+      current_price_usd: 5.00
+      is_native: true
+
+revenue_streams:
+  - name: trading_fees
+    monthly_usd: 12000000
+    description: Trading fees from swaps
+    confidence: high
+  - name: listing_fees
+    monthly_usd: 500000
+    description: Token listing fees
+    confidence: medium
+
+cost_streams:
+  - name: liquidity_incentives
+    monthly_usd: 8000000
+    description: Liquidity mining rewards
+    is_discretionary: true
+  - name: team
+    monthly_usd: 2000000
+    description: Core team and operations
+    is_discretionary: false
+  - name: infrastructure
+    monthly_usd: 500000
+    description: Frontend and infrastructure
+    is_discretionary: false
+
+data_sources:
+  - https://defillama.com
+  - https://example-dex.com/analytics
+
+last_updated: "2025-01-15"
+notes: Sample DEX protocol with trading fee revenue

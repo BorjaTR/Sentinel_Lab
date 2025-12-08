@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  sentinel-dashboard:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+      - ./experiments:/app/experiments
+    environment:
+      - PYTHONUNBUFFERED=1

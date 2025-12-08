@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentinel Protocol Rankings - Know Your Runway</title>
+    <meta name="description" content="Protocol sustainability ratings for crypto. 0% of major protocols are in healthy financial condition.">
+    <meta name="keywords" content="DAO, protocol sustainability, crypto treasury, Arbitrum, Optimism, Uniswap, Aave, Lido, governance, runway">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Sentinel Protocol Rankings - Know Your Runway">
+    <meta property="og:description" content="0% of major protocols are in healthy financial condition. See the rankings.">
+    <meta property="og:url" content="https://borjatr.github.io/Sentinel_Lab/">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Sentinel Protocol Rankings">
+    <meta name="twitter:description" content="Protocol sustainability scores for crypto">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #2d3748;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            margin-bottom: 40px;
+        }
+
+        .hero-stat {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px auto;
+            max-width: 700px;
+        }
+
+        .hero-stat h2 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero-stat p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Main Content */
+        .content {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: #667eea;
+        }
+
+        /* Rankings Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            font-size: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        th:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        th.sortable::after {
+            content: ' ⇅';
+            opacity: 0.5;
+            font-size: 0.8rem;
+        }
+
+        th.sorted-asc::after {
+            content: ' ↑';
+            opacity: 1;
+        }
+
+        th.sorted-desc::after {
+            content: ' ↓';
+            opacity: 1;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #e2e8f0;
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: #f7fafc;
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        td {
+            padding: 15px;
+        }
+
+        .rank {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #667eea;
+        }
+
+        .protocol-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .score {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .grade {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .grade-S { background: #48bb78; color: white; }
+        .grade-A { background: #4299e1; color: white; }
+        .grade-B { background: #38b2ac; color: white; }
+        .grade-C { background: #ed8936; color: white; }
+        .grade-D { background: #f56565; color: white; }
+        .grade-F { background: #e53e3e; color: white; }
+
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .status-healthy { background: #c6f6d5; color: #22543d; }
+        .status-warning { background: #feebc8; color: #7c2d12; }
+        .status-critical { background: #fed7d7; color: #742a2a; }
+
+        .runway {
+            font-weight: 600;
+        }
+
+        .runway-critical {
+            color: #e53e3e;
+            font-weight: 700;
+        }
+
+        /* Key Insights */
+        .insights {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .insight-card {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .insight-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .insight-card p {
+            color: #4a5568;
+            font-size: 0.95rem;
+        }
+
+        .insight-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        /* CTA Section */
+        .cta {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .cta h2 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+        }
+
+        .cta p {
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+            opacity: 0.95;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            padding: 15px 40px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: white;
+            padding: 30px 20px;
+            opacity: 0.9;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .footer a:hover {
+            border-bottom-color: white;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-stat h2 {
+                font-size: 2rem;
+            }
+
+            table {
+                font-size: 0.9rem;
+            }
+
+            th, td {
+                padding: 10px;
+            }
+
+            .content {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <div class="hero">
+        <div class="container">
+            <h1>Know Your Runway</h1>
+            <p>Protocol sustainability ratings for crypto DAOs, L2s, and DeFi</p>
+
+            <div class="hero-stat">
+                <h2>0% of major protocols are financially healthy</h2>
+                <p>We analyzed 5 leading crypto protocols. Not a single one scored "Healthy" status. One is critical.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="content">
+            <h2 class="section-title">Protocol Rankings</h2>
+            <p style="margin-bottom: 20px; color: #4a5568;">
+                Click column headers to sort. Sentinel Score is a 0-100 rating based on runway, sustainability, diversification, and trajectory.
+            </p>
+
+            <table id="rankingsTable">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-column="rank">#</th>
+                        <th class="sortable" data-column="protocol">Protocol</th>
+                        <th class="sortable" data-column="score">Score</th>
+                        <th class="sortable" data-column="grade">Grade</th>
+                        <th class="sortable" data-column="status">Status</th>
+                        <th class="sortable" data-column="runway">Runway</th>
+                        <th>Key Issue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="rank">1</td>
+                        <td class="protocol-name">Aave</td>
+                        <td class="score">63/100</td>
+                        <td><span class="grade grade-C">C</span></td>
+                        <td><span class="status status-warning">⚠️ Warning</span></td>
+                        <td class="runway">314 months</td>
+                        <td>$4M/mo buybacks create deficit</td>
+                    </tr>
+                    <tr>
+                        <td class="rank">2</td>
+                        <td class="protocol-name">Lido</td>
+                        <td class="score">59/100</td>
+                        <td><span class="grade grade-C">C</span></td>
+                        <td><span class="status status-warning">⚠️ Warning</span></td>
+                        <td class="runway">301 months</td>
+                        <td>Nearly break-even, tight margins</td>
+                    </tr>
+                    <tr>
+                        <td class="rank">3</td>
+                        <td class="protocol-name">Arbitrum DAO</td>
+                        <td class="score">47/100</td>
+                        <td><span class="grade grade-D">D</span></td>
+                        <td><span class="status status-warning">⚠️ Warning</span></td>
+                        <td class="runway">88 months</td>
+                        <td>$8M/mo incentive burn unsustainable</td>
+                    </tr>
+                    <tr>
+                        <td class="rank">4</td>
+                        <td class="protocol-name">Uniswap</td>
+                        <td class="score">45/100</td>
+                        <td><span class="grade grade-D">D</span></td>
+                        <td><span class="status status-warning">⚠️ Warning</span></td>
+                        <td class="runway">736 months</td>
+                        <td>$4.4B treasury, but $0 revenue</td>
+                    </tr>
+                    <tr>
+                        <td class="rank">5</td>
+                        <td class="protocol-name">Optimism</td>
+                        <td class="score">31/100</td>
+                        <td><span class="grade grade-F">F</span></td>
+                        <td><span class="status status-critical">🚨 Critical</span></td>
+                        <td class="runway runway-critical">17 months</td>
+                        <td>RPGF spending ($15M/mo) unsustainable</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2 class="section-title" style="margin-top: 60px;">Key Findings</h2>
+            <div class="insights">
+                <div class="insight-card">
+                    <div class="insight-number">0%</div>
+                    <h3>Healthy Protocols</h3>
+                    <p>Not a single protocol scored 70+ (Healthy status)</p>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-number">49</div>
+                    <h3>Average Score</h3>
+                    <p>Mean score of 49/100 across all 5 protocols (failing grade)</p>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-number">$6.3B</div>
+                    <h3>Total Treasury</h3>
+                    <p>Combined treasury across all analyzed protocols</p>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-number">17mo</div>
+                    <h3>Shortest Runway</h3>
+                    <p>Optimism risks insolvency by April 2026 at current spend</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; padding: 25px; background: #f7fafc; border-radius: 10px;">
+                <h3 style="color: #667eea; margin-bottom: 15px;">What is Sentinel Score?</h3>
+                <p style="color: #4a5568; margin-bottom: 15px;">
+                    Sentinel Score is a 0-100 rating that measures protocol financial sustainability. It combines four components:
+                </p>
+                <ul style="color: #4a5568; margin-left: 20px; line-height: 1.8;">
+                    <li><strong>Runway (40%)</strong> - Months until treasury depletion</li>
+                    <li><strong>Sustainability (30%)</strong> - Revenue vs costs ratio</li>
+                    <li><strong>Diversification (20%)</strong> - Treasury and revenue concentration risk</li>
+                    <li><strong>Trajectory (10%)</strong> - Historical trend and improvements</li>
+                </ul>
+                <p style="color: #4a5568; margin-top: 15px;">
+                    <a href="https://github.com/BorjaTR/Sentinel_Lab" style="color: #667eea; text-decoration: none; border-bottom: 1px solid #667eea;">View full methodology →</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- CTA Section -->
+        <div class="cta">
+            <h2>Score Your Protocol</h2>
+            <p>Want to know your protocol's Sentinel Score? The tool is free and open source.</p>
+            <a href="https://github.com/BorjaTR/Sentinel_Lab" class="cta-button">Get Started on GitHub</a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="container">
+            <p>
+                Built with <a href="https://github.com/BorjaTR/Sentinel_Lab">Sentinel</a> |
+                <a href="https://github.com/BorjaTR/Sentinel_Lab/blob/main/docs/methodology.md">Methodology</a> |
+                Last Updated: December 8, 2024
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Sortable table functionality
+        const table = document.getElementById('rankingsTable');
+        const headers = table.querySelectorAll('th.sortable');
+        let currentSort = { column: 'rank', direction: 'asc' };
+
+        // Data structure for sorting
+        const tableData = [
+            { rank: 1, protocol: 'Aave', score: 63, grade: 'C', status: 'Warning', runway: 314, issue: '$4M/mo buybacks create deficit' },
+            { rank: 2, protocol: 'Lido', score: 59, grade: 'C', status: 'Warning', runway: 301, issue: 'Nearly break-even, tight margins' },
+            { rank: 3, protocol: 'Arbitrum DAO', score: 47, grade: 'D', status: 'Warning', runway: 88, issue: '$8M/mo incentive burn unsustainable' },
+            { rank: 4, protocol: 'Uniswap', score: 45, grade: 'D', status: 'Warning', runway: 736, issue: '$4.4B treasury, but $0 revenue' },
+            { rank: 5, protocol: 'Optimism', score: 31, grade: 'F', status: 'Critical', runway: 17, issue: 'RPGF spending ($15M/mo) unsustainable' }
+        ];
+
+        function sortTable(column, direction) {
+            const sortedData = [...tableData].sort((a, b) => {
+                let aVal = a[column];
+                let bVal = b[column];
+
+                // Handle string comparisons
+                if (typeof aVal === 'string') {
+                    aVal = aVal.toLowerCase();
+                    bVal = bVal.toLowerCase();
+                }
+
+                if (direction === 'asc') {
+                    return aVal > bVal ? 1 : -1;
+                } else {
+                    return aVal < bVal ? 1 : -1;
+                }
+            });
+
+            renderTable(sortedData);
+            updateHeaders(column, direction);
+        }
+
+        function renderTable(data) {
+            const tbody = table.querySelector('tbody');
+            tbody.innerHTML = data.map(row => `
+                <tr>
+                    <td class="rank">${row.rank}</td>
+                    <td class="protocol-name">${row.protocol}</td>
+                    <td class="score">${row.score}/100</td>
+                    <td><span class="grade grade-${row.grade}">${row.grade}</span></td>
+                    <td><span class="status status-${row.status.toLowerCase()}">${row.status === 'Critical' ? '🚨' : '⚠️'} ${row.status}</span></td>
+                    <td class="runway ${row.runway < 30 ? 'runway-critical' : ''}">${row.runway} months</td>
+                    <td>${row.issue}</td>
+                </tr>
+            `).join('');
+        }
+
+        function updateHeaders(column, direction) {
+            headers.forEach(header => {
+                header.classList.remove('sorted-asc', 'sorted-desc');
+                if (header.dataset.column === column) {
+                    header.classList.add(direction === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                }
+            });
+        }
+
+        // Add click handlers
+        headers.forEach(header => {
+            header.addEventListener('click', () => {
+                const column = header.dataset.column;
+                let direction = 'asc';
+
+                if (currentSort.column === column) {
+                    direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                }
+
+                currentSort = { column, direction };
+                sortTable(column, direction);
+            });
+        });
+
+        // Initialize with default sort
+        updateHeaders('rank', 'asc');
+    </script>
+</body>
+</html>

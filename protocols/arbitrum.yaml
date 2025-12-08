@@ -1,0 +1,64 @@
+name: Arbitrum DAO
+type: dao
+chain: arbitrum
+website: https://arbitrum.io
+governance_forum: https://forum.arbitrum.foundation
+
+treasury:
+  holdings:
+    - symbol: ARB
+      amount: 3400000000
+      current_price_usd: 0.21
+      is_native: true
+    - symbol: USDC
+      amount: 50000000
+      current_price_usd: 1.00
+      is_stable: true
+    - symbol: ETH
+      amount: 7500
+      current_price_usd: 3500
+
+revenue_streams:
+  - name: sequencer_fees
+    monthly_usd: 2000000
+    description: L2 surplus fees from transaction processing
+    confidence: high
+  - name: rwa_yield
+    monthly_usd: 60000
+    description: STEP program treasury bill yields
+    confidence: high
+
+cost_streams:
+  - name: incentive_programs
+    monthly_usd: 8000000
+    description: STIP, LTIPP, and other growth incentives
+    is_discretionary: true
+  - name: grants_programs
+    monthly_usd: 1100000
+    description: Ecosystem grants and builder support
+    is_discretionary: true
+  - name: core_contributors
+    monthly_usd: 1000000
+    description: Foundation and core team operations
+    is_discretionary: false
+  - name: service_providers
+    monthly_usd: 500000
+    description: External service providers and contractors
+    is_discretionary: false
+  - name: dao_operations
+    monthly_usd: 400000
+    description: Governance infrastructure and operations
+    is_discretionary: false
+
+data_sources:
+  - https://arbiscan.io/address/0xF3FC178157fb3c87548bAA86F9d24BA38E649B58
+  - https://forum.arbitrum.foundation
+  - https://dune.com/springzhang/arbitrum-one-sequencer-revenue
+
+last_updated: "2024-12-08"
+
+notes: |
+  Incentive spending (85% of costs) expected to decrease in 2025.
+  Post-EIP4844 margins improved from 25% to 80%.
+  Treasury is 90% ARB tokens - significant price exposure.
+  Current burn rate of ~$9M/month vs ~$2M/month revenue.

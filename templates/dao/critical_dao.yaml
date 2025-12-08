@@ -1,0 +1,37 @@
+name: Critical DAO
+type: dao
+chain: ethereum
+website: https://example.com
+
+treasury:
+  holdings:
+    - symbol: TOKEN
+      amount: 2000000000
+      current_price_usd: 0.005
+      is_native: true
+    - symbol: USDC
+      amount: 500000
+      current_price_usd: 1.0
+      is_stable: true
+
+revenue_streams:
+  - name: protocol_fees
+    monthly_usd: 50000
+    description: Minimal protocol revenue
+    confidence: medium
+
+cost_streams:
+  - name: team
+    monthly_usd: 1500000
+    description: Core team
+    is_discretionary: false
+  - name: operations
+    monthly_usd: 500000
+    description: Infrastructure costs
+    is_discretionary: false
+
+data_sources:
+  - https://example.com/treasury
+
+last_updated: "2025-01-15"
+notes: Protocol in critical state with high burn rate

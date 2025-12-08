@@ -5,11 +5,17 @@ obj_dir/
 # Ignore Python Cache
 __pycache__/
 *.pyc
+.coverage
+*.egg-info/
 
 # Ignore Simulation Results & Waveforms
 results.xml
 *.vcd
 *.fst
+
+# Ignore Generated Logs and Test Data
+logs/
+data/processed_batch.csv
 
 # Ignore Mac System Files
 .DS_Store

@@ -30,17 +30,17 @@ class TestMapperDeterminism:
         row = {
             'timestamp': '1700000000',
             'signature': 'abc123def456',
-            'from': 'SoLaRa1234567890ABCDEFGHIJKLMNOPQR',
-            'to': 'SoLaRa9876543210ZYXWVUTSRQPONMLKJI',
+            'sender': 'SoLaRa1234567890ABCDEFGHIJKLMNOPQR',
+            'receiver': 'SoLaRa9876543210ZYXWVUTSRQPONMLKJI',
             'amount_usdc': '1000000',  # 1 USDC (6 decimals)
-            'amount_gpu': '0',
+            'amount_compute': '0',
             'program': 'spl_token',
         }
 
         # Normalize 10 times
         results = []
         for _ in range(10):
-            tx = normalize_solana(row, num_users=1024, strict_roles=False)
+            tx = normalize_solana(row, num_users=1024)
             results.append(tx)
 
         # All results should be identical
@@ -48,18 +48,19 @@ class TestMapperDeterminism:
             assert results[i].timestamp == results[0].timestamp
             assert results[i].user_a == results[0].user_a
             assert results[i].user_b == results[0].user_b
-            assert results[i].amount0 == results[0].amount0
-            assert results[i].amount1 == results[0].amount1
+            assert results[i].asset0_amount == results[0].asset0_amount
+            assert results[i].asset1_amount == results[0].asset1_amount
             assert results[i].opcode == results[0].opcode
 
     def test_evm_mapper_determinism(self):
         """Test EVM mapper produces same output for same input"""
         row = {
-            'timestamp': '1700000000',
-            'tx_hash': '0xabcd1234',
+            'block_timestamp': '1700000000',
+            'transaction_hash': '0xabcd1234',
             'from': '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
             'to': '0x8ad599c3A0ff1De082011EFDDc58f1908eb6e6D8',
             'value': '1000000000000000000',  # 1 ETH (18 decimals)
+            'block_number': '12345678',
         }
 
         results = []
@@ -71,15 +72,15 @@ class TestMapperDeterminism:
         for i in range(1, len(results)):
             assert results[i].user_a == results[0].user_a
             assert results[i].user_b == results[0].user_b
-            assert results[i].amount0 == results[0].amount0
+            assert results[i].asset0_amount == results[0].asset0_amount
 
     def test_depin_mapper_determinism(self):
         """Test DePIN rewards mapper produces same output for same input"""
         row = {
-            'timestamp': '1700000000',
-            'user_address': 'depin_user_12345',
+            'epoch': '1700000000',
+            'node_id': 'depin_user_12345',
             'reward_amount': '100',
-            'reward_type': 'mining',
+            'node_type': 'miner',
         }
 
         results = []
@@ -89,7 +90,7 @@ class TestMapperDeterminism:
 
         for i in range(1, len(results)):
             assert results[i].user_a == results[0].user_a
-            assert results[i].amount0 == results[0].amount0
+            assert results[i].asset0_amount == results[0].asset0_amount
 
 
 class TestMapperValidation:
@@ -113,16 +114,16 @@ class TestMapperValidation:
         row = {
             'timestamp': '1700000000',
             'signature': 'test',
-            'from': 'addr1',
-            'to': 'addr2',
+            'sender': 'addr1',
+            'receiver': 'addr2',
             'amount_usdc': '1000',
-            'amount_gpu': '0',
+            'amount_compute': '0',
             'program': 'unknown_program',
         }
 
         # Should either reject or default to safe opcode
-        tx = normalize_solana(row, num_users=1024, strict_roles=False)
-        valid_opcodes = ['transfer', 'swap', 'reward', 'penalty']
+        tx = normalize_solana(row, num_users=1024)
+        valid_opcodes = [Opcode.TRANSFER, Opcode.SWAP, Opcode.REWARD, Opcode.PENALTY]
         assert tx.opcode in valid_opcodes, f"Invalid opcode: {tx.opcode}"
 
     def test_negative_amounts_rejected(self):
@@ -130,42 +131,37 @@ class TestMapperValidation:
         row = {
             'timestamp': '1700000000',
             'signature': 'test',
-            'from': 'addr1',
-            'to': 'addr2',
+            'sender': 'addr1',
+            'receiver': 'addr2',
             'amount_usdc': '-1000',  # Negative!
-            'amount_gpu': '0',
+            'amount_compute': '0',
             'program': 'spl_token',
         }
 
         # Should either raise exception or clamp to 0
         try:
-            tx = normalize_solana(row, num_users=1024, strict_roles=False)
-            assert tx.amount0 >= 0, "Negative amount was not rejected"
+            tx = normalize_solana(row, num_users=1024)
+            assert tx.asset0_amount >= 0, "Negative amount was not rejected"
         except (ValueError, AssertionError):
             # Expected: reject invalid input
             pass
 
     def test_invalid_role_strict_mode(self):
-        """Test that invalid roles are rejected in strict mode"""
+        """Test that roles are set to reasonable defaults"""
         row = {
             'timestamp': '1700000000',
             'signature': 'test',
-            'from': 'addr1',
-            'to': 'addr2',
+            'sender': 'addr1',
+            'receiver': 'addr2',
             'amount_usdc': '1000',
-            'amount_gpu': '0',
+            'amount_compute': '0',
             'program': 'spl_token',
-            'role_from': 'InvalidRole',  # Not a valid UserRole
-            'role_to': 'client',
         }
 
-        # In strict mode, should reject or default
-        try:
-            tx = normalize_solana(row, num_users=1024, strict_roles=True)
-            assert tx.role_a in VALID_ROLES, f"Invalid role: {tx.role_a}"
-        except (ValueError, KeyError):
-            # Expected: reject invalid role
-            pass
+        # Mapper should set default roles (e.g., 'client' for Solana)
+        tx = normalize_solana(row, num_users=1024)
+        assert tx.role_a in VALID_ROLES, f"Invalid role: {tx.role_a}"
+        assert tx.role_b in VALID_ROLES, f"Invalid role: {tx.role_b}"
 
 
 class TestAddressHashingStability:
@@ -261,10 +257,10 @@ class TestCollisionAwareness:
             row = {
                 'timestamp': str(1700000000 + i),
                 'signature': f"sig_{i}",
-                'from': addr,
-                'to': addresses[(i + 1) % num_addresses],
+                'sender': addr,
+                'receiver': addresses[(i + 1) % num_addresses],
                 'amount_usdc': str(random.randint(1, 1000)),
-                'amount_gpu': '0',
+                'amount_compute': '0',
                 'program': 'spl_token',
             }
             csv_data.append(row)
@@ -273,7 +269,7 @@ class TestCollisionAwareness:
         transactions = []
         for row in csv_data[:100]:  # Test first 100 to keep it fast
             try:
-                tx = normalize_solana(row, num_users=num_users, strict_roles=False)
+                tx = normalize_solana(row, num_users=num_users)
                 transactions.append(tx)
             except Exception as e:
                 pytest.fail(f"Normalization crashed with high collisions: {e}")
@@ -299,32 +295,32 @@ class TestCollisionAwareness:
             row1 = {
                 'timestamp': '1700000000',
                 'signature': 'sig1',
-                'from': addr1,
-                'to': 'other',
+                'sender': addr1,
+                'receiver': 'other',
                 'amount_usdc': '1000',
-                'amount_gpu': '0',
+                'amount_compute': '0',
                 'program': 'spl_token',
             }
 
             row2 = {
                 'timestamp': '1700000001',
                 'signature': 'sig2',
-                'from': addr2,
-                'to': 'other',
+                'sender': addr2,
+                'receiver': 'other',
                 'amount_usdc': '2000',
-                'amount_gpu': '0',
+                'amount_compute': '0',
                 'program': 'spl_token',
             }
 
-            tx1 = normalize_solana(row1, num_users=num_users, strict_roles=False)
-            tx2 = normalize_solana(row2, num_users=num_users, strict_roles=False)
+            tx1 = normalize_solana(row1, num_users=num_users)
+            tx2 = normalize_solana(row2, num_users=num_users)
 
             # Both should use same user_id (collision)
             assert tx1.user_a == tx2.user_a
 
             # But amounts should be preserved correctly
-            assert tx1.amount0 == 1000
-            assert tx2.amount0 == 2000
+            assert tx1.asset0_amount == 1000
+            assert tx2.asset0_amount == 2000
 
 
 @pytest.mark.parametrize("mapper_name", ["solana", "evm", "depin_rewards"])
@@ -335,23 +331,28 @@ def test_mapper_fuzz(mapper_name):
         row = {
             'timestamp': str(random.randint(0, 2**31)),
             'signature': ''.join(random.choices('abcdef0123456789', k=64)),
-            'from': ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=44)),
-            'to': ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=44)),
+            'sender': ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=44)),
+            'receiver': ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=44)),
             'amount_usdc': str(random.randint(-1000, 1000000)),  # May be negative
-            'amount_gpu': str(random.randint(-100, 10000)),
+            'amount_compute': str(random.randint(-100, 10000)),
             'program': random.choice(['spl_token', 'unknown', '', None]),
         }
 
         try:
             if mapper_name == "solana":
-                tx = normalize_solana(row, num_users=1024, strict_roles=False)
+                tx = normalize_solana(row, num_users=1024)
             elif mapper_name == "evm":
-                row['tx_hash'] = '0x' + row['signature'][:40]
+                row['block_timestamp'] = row['timestamp']
+                row['transaction_hash'] = '0x' + row['signature'][:40]
+                row['from'] = row['sender']
+                row['to'] = row['receiver']
                 row['value'] = row['amount_usdc']
+                row['block_number'] = '0'
                 tx = normalize_evm_erc20(row, num_users=1024)
             else:
-                row['user_address'] = row['from']
+                row['node_id'] = row['sender']
                 row['reward_amount'] = row['amount_usdc']
+                row['epoch'] = row['timestamp']
                 tx = normalize_depin_rewards(row, num_users=1024)
 
             # Should produce valid transaction or raise exception
@@ -359,7 +360,7 @@ def test_mapper_fuzz(mapper_name):
                 assert 0 <= tx.user_a < 1024
                 assert 0 <= tx.user_b < 1024
                 assert tx.asset0_amount >= 0  # No negative amounts
-                valid_opcodes = ['transfer', 'swap', 'reward', 'penalty']
+                valid_opcodes = [Opcode.TRANSFER, Opcode.SWAP, Opcode.REWARD, Opcode.PENALTY]
                 assert tx.opcode in valid_opcodes
 
         except (ValueError, KeyError, TypeError, AttributeError):

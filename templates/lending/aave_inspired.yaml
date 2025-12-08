@@ -1,0 +1,81 @@
+name: Aave-Inspired Lending
+type: lending
+chain: ethereum
+website: https://aave.com
+governance_forum: https://governance.aave.com
+
+# Note: Numbers are illustrative based on public lending protocol economics,
+# not exact figures from any specific protocol
+
+treasury:
+  holdings:
+    - symbol: USDC
+      amount: 100000000
+      current_price_usd: 1.0
+      is_stable: true
+    - symbol: USDT
+      amount: 50000000
+      current_price_usd: 1.0
+      is_stable: true
+    - symbol: DAI
+      amount: 30000000
+      current_price_usd: 1.0
+      is_stable: true
+    - symbol: AAVE
+      amount: 200000000
+      current_price_usd: 90.00
+      is_native: true
+
+revenue_streams:
+  - name: interest_spread
+    monthly_usd: 15000000
+    description: Spread between borrow and supply rates
+    confidence: high
+  - name: liquidation_fees
+    monthly_usd: 3000000
+    description: Liquidation penalties
+    confidence: high
+  - name: flash_loan_fees
+    monthly_usd: 2000000
+    description: Flash loan fees (0.09%)
+    confidence: medium
+
+cost_streams:
+  - name: security_module
+    monthly_usd: 1500000
+    description: Safety module incentives and insurance
+    is_discretionary: false
+  - name: core_development
+    monthly_usd: 2500000
+    description: Protocol development and maintenance
+    is_discretionary: false
+  - name: grants_program
+    monthly_usd: 3000000
+    description: Ecosystem grants and integrations
+    is_discretionary: true
+  - name: liquidity_mining
+    monthly_usd: 8000000
+    description: Liquidity incentives for borrowers/lenders
+    is_discretionary: true
+  - name: operations
+    monthly_usd: 1000000
+    description: Infrastructure, governance, community
+    is_discretionary: false
+  - name: risk_management
+    monthly_usd: 500000
+    description: Risk framework and oracle costs
+    is_discretionary: false
+
+data_sources:
+  - https://aave.com/governance
+  - https://dune.com/aave
+  - https://defillama.com/protocol/aave
+
+last_updated: "2025-01-15"
+notes: |
+  Illustrative lending protocol economics showing:
+  - Multiple revenue streams (interest, liquidations, flash loans)
+  - Significant liquidity incentives (user acquisition)
+  - Strong treasury diversification (multiple stables)
+  - Profitable but with high discretionary costs
+  - Security-focused (insurance, audits, risk management)

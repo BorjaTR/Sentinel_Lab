@@ -84,12 +84,21 @@ else:
         ]]
     else:
         # Multi-select for comparison mode
+        # Auto-select newest experiment (experiment_metadata is already sorted by time, newest first)
+        default_selection = [experiment_metadata[0]['display_name']] if experiment_metadata else []
+
         selected_names = st.sidebar.multiselect(
             "Select Experiments to Compare",
             options=[meta['display_name'] for meta in experiment_metadata],
-            default=[experiment_metadata[0]['display_name']] if experiment_metadata else [],
-            help="Choose one or more experiments to compare"
+            default=default_selection,
+            help="Choose one or more experiments to compare",
+            key="experiment_selector"  # Add key for state management
         )
+
+        # If no selection, default to newest
+        if not selected_names and experiment_metadata:
+            selected_names = [experiment_metadata[0]['display_name']]
+
         selected_experiments = [
             available_experiments[[m['display_name'] for m in experiment_metadata].index(name)]
             for name in selected_names
@@ -137,21 +146,56 @@ with st.sidebar.form("sweep_launcher"):
 
             with st.spinner(f"🚀 Running sweep ({fee_min}-{fee_max} bps)..."):
                 try:
+                    # Run the sweep
                     sweep = client.sweep(
                         scenario=scenario,
                         fee_range=(fee_min, fee_max, fee_step),
                         mapper=mapper
                     )
 
+                    # Check if sweep actually has results
+                    if not sweep._experiment_result.runs:
+                        st.error("❌ Sweep completed but generated no runs")
+                        st.stop()
+
+                    # Count successful runs
+                    successful_runs = sum(1 for r in sweep._experiment_result.runs if r.success)
+                    failed_runs = sum(1 for r in sweep._experiment_result.runs if not r.success)
+
+                    # Log results for debugging
+                    st.write(f"Debug: Total runs: {len(sweep._experiment_result.runs)}")
+                    st.write(f"Debug: Successful: {successful_runs}")
+                    st.write(f"Debug: Failed: {failed_runs}")
+
+                    if successful_runs == 0:
+                        st.error(f"❌ All {failed_runs} runs failed!")
+                        # Show first error if available
+                        if sweep._experiment_result.runs:
+                            first_run = sweep._experiment_result.runs[0]
+                            if hasattr(first_run, 'error_message') and first_run.error_message:
+                                st.error(f"Error: {first_run.error_message}")
+                        st.stop()
+
                     # Save experiment
                     saved_path = save_experiment(sweep._experiment_result, experiments_dir)
 
-                    st.success(f"✅ Sweep complete!")
+                    # Clear experiment selector to force reload of newest experiment
+                    if 'experiment_selector' in st.session_state:
+                        del st.session_state['experiment_selector']
+
+                    st.success(f"✅ Sweep complete! {successful_runs}/{len(sweep._experiment_result.runs)} runs successful")
                     st.info(f"💾 Saved to: `{saved_path.name}`")
+
+                    # Give user time to see the message before rerun
+                    import time
+                    time.sleep(1)
                     st.rerun()
 
                 except Exception as e:
-                    st.error(f"❌ Sweep failed: {e}")
+                    st.error(f"❌ Sweep failed with exception: {e}")
+                    # Show full traceback for debugging
+                    import traceback
+                    st.code(traceback.format_exc())
 
 # =========================================================================
 # MAIN PANEL

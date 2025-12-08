@@ -1,0 +1,74 @@
+name: Arbitrum-Inspired L2
+type: l2
+chain: ethereum
+website: https://arbitrum.io
+governance_forum: https://forum.arbitrum.foundation
+
+# Note: Numbers are illustrative based on public L2 economics,
+# not exact figures from any specific protocol
+
+treasury:
+  holdings:
+    - symbol: ETH
+      amount: 100000
+      current_price_usd: 3000
+      is_stable: false
+    - symbol: USDC
+      amount: 200000000
+      current_price_usd: 1.0
+      is_stable: true
+    - symbol: ARB
+      amount: 3000000000
+      current_price_usd: 1.20
+      is_native: true
+
+revenue_streams:
+  - name: sequencer_fees
+    monthly_usd: 12000000
+    description: Transaction sequencing fees from L2 operations
+    confidence: high
+  - name: base_fees
+    monthly_usd: 3000000
+    description: Priority fees and base fees
+    confidence: high
+  - name: mev_capture
+    monthly_usd: 1500000
+    description: MEV extracted by sequencer
+    confidence: medium
+
+cost_streams:
+  - name: data_availability
+    monthly_usd: 6000000
+    description: L1 data availability costs (posting batches to Ethereum)
+    is_discretionary: false
+    confidence: high
+  - name: infrastructure
+    monthly_usd: 2500000
+    description: Sequencer infrastructure and operations
+    is_discretionary: false
+  - name: core_team
+    monthly_usd: 3000000
+    description: Core protocol development team
+    is_discretionary: false
+  - name: ecosystem_grants
+    monthly_usd: 4000000
+    description: Grants for ecosystem development and growth
+    is_discretionary: true
+  - name: security_audits
+    monthly_usd: 500000
+    description: Ongoing security audits and bug bounties
+    is_discretionary: false
+
+data_sources:
+  - https://l2beat.com
+  - https://arbiscan.io
+  - https://dune.com/arbitrum
+
+last_updated: "2025-01-15"
+notes: |
+  Illustrative L2 economics showing:
+  - High revenue from sequencer operations
+  - Significant DA costs (posting to L1)
+  - Profitable with positive monthly net
+  - Large native token treasury
+  - Balance between growth (grants) and sustainability

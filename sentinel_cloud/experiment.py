@@ -394,6 +394,75 @@ def run_scenario(
 
         # Prepare environment
         env = os.environ.copy()
+
+        # Ensure cocotb is in PATH (critical for Streamlit/dashboard execution)
+        # When running from Streamlit, the PATH may not include /usr/local/bin
+        # Force inclusion of common installation paths
+        required_paths = ['/usr/local/bin', '/usr/bin', '/root/.local/bin']
+
+        if 'PATH' in env and env['PATH']:
+            existing_path = env['PATH']
+            # Prepend required paths to ensure they're found first
+            env['PATH'] = ':'.join(required_paths) + ':' + existing_path
+        else:
+            # No PATH set, create one
+            env['PATH'] = ':'.join(required_paths)
+
+        # Detect cocotb makefiles path via Python (more reliable than cocotb-config binary)
+        # This bypasses the need for cocotb-config to be in PATH
+        cocotb_makefiles = None
+
+        # Method 1: Try importing cocotb
+        try:
+            import cocotb
+            detected_path = os.path.join(
+                os.path.dirname(cocotb.__file__),
+                'share',
+                'makefiles'
+            )
+            # Only use detected path if it exists AND isn't a cross-platform mismatch
+            # (e.g., macOS path on Linux system)
+            import platform
+            if os.path.exists(detected_path):
+                # Check for cross-platform path issues
+                if platform.system() == 'Linux' and detected_path.startswith('/Users/'):
+                    # macOS path on Linux - ignore it
+                    pass
+                else:
+                    cocotb_makefiles = detected_path
+        except (ImportError, AttributeError):
+            pass
+
+        # Method 2: Try common installation paths as fallback
+        if not cocotb_makefiles:
+            common_paths = [
+                '/usr/local/lib/python3.11/dist-packages/cocotb/share/makefiles',
+                '/usr/local/lib/python3.10/dist-packages/cocotb/share/makefiles',
+                '/usr/lib/python3/dist-packages/cocotb/share/makefiles',
+            ]
+            for path in common_paths:
+                # Don't check existence - Streamlit may have restricted filesystem access
+                # Just try the paths in order and use the first one
+                cocotb_makefiles = path
+                break
+
+        # Last resort: use the known working path
+        if not cocotb_makefiles:
+            cocotb_makefiles = '/usr/local/lib/python3.11/dist-packages/cocotb/share/makefiles'
+
+        # Verify the path and Makefile.sim exist before setting
+        makefile_sim = os.path.join(cocotb_makefiles, 'Makefile.sim')
+        if not os.path.exists(makefile_sim):
+            # Try to find it in alternate locations
+            import glob
+            possible_locations = glob.glob('/usr/*/lib/python*/dist-packages/cocotb/share/makefiles/Makefile.sim')
+            possible_locations += glob.glob('/root/.local/lib/python*/site-packages/cocotb/share/makefiles/Makefile.sim')
+            if possible_locations:
+                cocotb_makefiles = os.path.dirname(possible_locations[0])
+
+        # Always set it - let make fail if path is actually wrong
+        env["COCOTB_MAKEFILES"] = cocotb_makefiles
+
         env["FEE_BPS_ASSET0"] = str(config.fee_bps_asset0)
         env["FEE_BPS_ASSET1"] = str(config.fee_bps_asset1)
 
@@ -410,15 +479,64 @@ def run_scenario(
         env["SCENARIO_FILE"] = os.path.abspath(processed_file)
 
         # Run simulation
-        cmd = ["make", "-C", "tb"]
-        result = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=300)
+        # Find tb directory - prefer relative to package location, fall back to hardcoded path
+        tb_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'tb'))
+
+        # If that doesn't exist (shouldn't happen in normal installation), use hardcoded path
+        if not os.path.exists(tb_dir):
+            tb_dir = '/home/user/Sentinel_Lab/tb'
+
+        # Final check - if still not found, try current directory
+        if not os.path.exists(tb_dir):
+            tb_dir = os.path.abspath('tb')
+
+        cmd = ["make", "-C", tb_dir]
+
+        # Ensure PATH is set in environment for subprocess
+        # This handles both the make process and any shell commands it spawns
+        result = subprocess.run(
+            cmd,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=300,
+            shell=False  # Explicitly don't use shell to avoid PATH issues
+        )
 
         if result.returncode != 0:
+            # Enhanced error message with debugging info
+            error_parts = []
+            error_parts.append(f"Simulation failed (returncode={result.returncode})")
+            error_parts.append(f"tb_dir: {tb_dir}")
+            error_parts.append(f"tb_dir exists: {os.path.exists(tb_dir)}")
+
+            if "cocotb-config" in result.stderr or "Makefile.sim" in result.stderr or "makefile" in result.stderr.lower():
+                cocotb_path = env.get('COCOTB_MAKEFILES', 'NOT SET')
+                error_parts.append(f"COCOTB_MAKEFILES: {cocotb_path}")
+
+                # Check if the path exists from Python's perspective
+                if cocotb_path != 'NOT SET':
+                    makefile_exists = os.path.exists(os.path.join(cocotb_path, 'Makefile.sim'))
+                    error_parts.append(f"Makefile.sim exists (from Python): {makefile_exists}")
+
+                    # List what's actually in that directory
+                    if os.path.exists(cocotb_path):
+                        try:
+                            files = os.listdir(cocotb_path)[:5]
+                            error_parts.append(f"Files in dir: {files}")
+                        except:
+                            error_parts.append("Cannot list directory")
+
+            error_parts.append(f"stderr: {result.stderr[:500]}")
+
+            if result.stdout:
+                error_parts.append(f"stdout: {result.stdout[:200]}")
+
             return RunResult(
                 config=config,
                 wall_time_seconds=time.time() - start_time,
                 success=False,
-                error_message=f"Simulation failed: {result.stderr[:200]}"
+                error_message=" | ".join(error_parts)
             )
 
         # Extract metrics from sim_stats.csv
