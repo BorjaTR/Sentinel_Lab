@@ -1,0 +1,57 @@
+name: Optimism
+type: l2
+chain: optimism
+website: https://optimism.io
+governance_forum: https://gov.optimism.io
+
+treasury:
+  holdings:
+    - symbol: OP
+      amount: 550000000
+      current_price_usd: 0.33
+      is_native: true
+    - symbol: ETH
+      amount: 15000
+      current_price_usd: 3500
+    - symbol: USDC
+      amount: 30000000
+      current_price_usd: 1.00
+      is_stable: true
+
+revenue_streams:
+  - name: op_mainnet_sequencer
+    monthly_usd: 1700000
+    description: Transaction fees from OP Mainnet
+    confidence: high
+  - name: superchain_revenue_share
+    monthly_usd: 1500000
+    description: 15% profit share from Base and other OP Stack chains
+    confidence: medium
+
+cost_streams:
+  - name: retro_funding
+    monthly_usd: 15000000
+    description: RPGF rounds - highly variable spending
+    is_discretionary: true
+  - name: foundation_operations
+    monthly_usd: 2000000
+    description: Optimism Foundation operations
+    is_discretionary: false
+  - name: grants_council
+    monthly_usd: 1500000
+    description: Grants Council approved funding
+    is_discretionary: true
+
+data_sources:
+  - https://optimism.mirror.xyz
+  - https://gov.optimism.io
+  - https://l2beat.com/scaling/projects/optimism
+
+last_updated: "2024-12-08"
+
+notes: |
+  RPGF spending is highly variable (rounds range $1M-$110M).
+  850M OP allocated for future public goods funding.
+  Base revenue share provides growing income stream.
+  Treasury is 69% OP tokens.
+  Significant deficit due to RPGF - unsustainable at current rate.

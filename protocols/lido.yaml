@@ -1,0 +1,66 @@
+name: Lido
+type: depin
+chain: ethereum
+website: https://lido.fi
+governance_forum: https://research.lido.fi
+
+treasury:
+  holdings:
+    - symbol: LDO
+      amount: 350000000
+      current_price_usd: 0.58
+      is_native: true
+    - symbol: stETH
+      amount: 15000
+      current_price_usd: 3500
+    - symbol: USDC
+      amount: 20000000
+      current_price_usd: 1.00
+      is_stable: true
+    - symbol: DAI
+      amount: 10000000
+      current_price_usd: 1.00
+      is_stable: true
+
+revenue_streams:
+  - name: protocol_fee_dao_share
+    monthly_usd: 2950000
+    description: 5% of staking rewards (half of 10% total fee)
+    confidence: high
+
+cost_streams:
+  - name: protocol_development
+    monthly_usd: 1500000
+    description: Core protocol development and maintenance
+    is_discretionary: false
+  - name: liquidity_incentives
+    monthly_usd: 1200000
+    description: stETH liquidity mining programs
+    is_discretionary: true
+  - name: grants_lego
+    monthly_usd: 600000
+    description: LEGO grants program
+    is_discretionary: true
+  - name: node_operator_support
+    monthly_usd: 300000
+    description: Node operator infrastructure support
+    is_discretionary: false
+  - name: operations
+    monthly_usd: 300000
+    description: DAO operations and governance
+    is_discretionary: false
+
+data_sources:
+  - https://blog.lido.fi
+  - https://research.lido.fi
+  - https://defillama.com/protocol/lido
+
+last_updated: "2024-12-08"
+
+notes: |
+  Largest liquid staking protocol with 24.4% of all staked ETH.
+  Revenue = 5% of ~$711M annual staking rewards (~$35.5M annual, $2.95M monthly).
+  Spending decreased from $190M (2021) to ~$46M (2025).
+  71% of treasury in LDO tokens.
+  Dual Governance implemented July 2025 - major protocol upgrade.
+  Slightly deficit but manageable with discretionary cost cuts possible.

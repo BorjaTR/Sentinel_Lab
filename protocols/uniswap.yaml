@@ -1,0 +1,55 @@
+name: Uniswap
+type: dex
+chain: ethereum
+website: https://uniswap.org
+governance_forum: https://gov.uniswap.org
+
+treasury:
+  holdings:
+    - symbol: UNI
+      amount: 730000000
+      current_price_usd: 6.00
+      is_native: true
+    - symbol: ETH
+      amount: 5000
+      current_price_usd: 3500
+    - symbol: USDC
+      amount: 15000000
+      current_price_usd: 1.00
+      is_stable: true
+    - symbol: DAI
+      amount: 5000000
+      current_price_usd: 1.00
+      is_stable: true
+
+revenue_streams: []
+  # FEE SWITCH IS OFF - Protocol earns $0
+  # Potential revenue if enabled: $4-85M/month from $170B+ monthly volume
+
+cost_streams:
+  - name: uniswap_foundation
+    monthly_usd: 3000000
+    description: Foundation operations and development
+    is_discretionary: false
+  - name: grants_program
+    monthly_usd: 2500000
+    description: UGP grants and ecosystem funding
+    is_discretionary: true
+  - name: governance_delegates
+    monthly_usd: 500000
+    description: Governance infrastructure and delegate compensation
+    is_discretionary: true
+
+data_sources:
+  - https://gov.uniswap.org
+  - https://etherscan.io/address/0x1a9C8182C09F50C8318d769245beA52c32BE35BC
+  - https://deepdao.io
+
+last_updated: "2024-12-08"
+
+notes: |
+  UNIQUE CASE: Largest DAO treasury ($4.4B) with ZERO protocol revenue.
+  Fee switch has never been enabled despite $170B+ monthly trading volume.
+  Treasury is 99%+ UNI tokens - extreme concentration.
+  Spending $6M/month with no income = treasury-only model.
+  738-month runway due to massive treasury, but fundamentally unsustainable.

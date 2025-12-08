@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentinel Protocol Rankings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
+        }
+
+        th {
+            background: #f8f9fa;
+            color: #333;
+            font-weight: 600;
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .rank {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .grade {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .grade-S {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .grade-A {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .grade-B {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .grade-C {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .grade-D, .grade-F {
+            background: #f5c6cb;
+            color: #721c24;
+        }
+
+        .status-Healthy {
+            color: #28a745;
+        }
+
+        .status-Warning {
+            color: #ffc107;
+        }
+
+        .status-Critical {
+            color: #dc3545;
+        }
+
+        .score {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.875rem;
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        footer {
+            background: #f8f9fa;
+            padding: 2rem;
+            text-align: center;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .legend {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .legend h3 {
+            margin-bottom: 1rem;
+            color: #333;
+        }
+
+        .legend ul {
+            list-style: none;
+            padding-left: 1rem;
+        }
+
+        .legend li {
+            margin: 0.5rem 0;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            header h1 {
+                font-size: 1.75rem;
+            }
+
+            table {
+                font-size: 0.875rem;
+            }
+
+            th, td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Sentinel Protocol Rankings</h1>
+            <p>Comparing 5 protocols</p>
+        </header>
+
+        <div class="content">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Protocol</th>
+                        <th>Type</th>
+                        <th>Score</th>
+                        <th>Grade</th>
+                        <th>Status</th>
+                        <th>Runway</th>
+                        <th>Sustainability</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="rank">1</td>
+                        <td><strong>Aave</strong></td>
+                        <td><span class="badge">lending</span></td>
+                        <td class="score">63/100</td>
+                        <td><span class="grade grade-C">C</span></td>
+                        <td class="status-Warning">⚠️ Warning</td>
+                        <td>314mo</td>
+                        <td>0.74</td>
+                    </tr>
+                    <tr>
+                        <td class="rank">2</td>
+                        <td><strong>Lido</strong></td>
+                        <td><span class="badge">depin</span></td>
+                        <td class="score">59/100</td>
+                        <td><span class="grade grade-C">C</span></td>
+                        <td class="status-Warning">⚠️ Warning</td>
+                        <td>301mo</td>
+                        <td>0.76</td>
+                    </tr>
+                    <tr>
+                        <td class="rank">3</td>
+                        <td><strong>Arbitrum DAO</strong></td>
+                        <td><span class="badge">dao</span></td>
+                        <td class="score">47/100</td>
+                        <td><span class="grade grade-D">D</span></td>
+                        <td class="status-Warning">⚠️ Warning</td>
+                        <td>88mo</td>
+                        <td>0.19</td>
+                    </tr>
+                    <tr>
+                        <td class="rank">4</td>
+                        <td><strong>Uniswap</strong></td>
+                        <td><span class="badge">dex</span></td>
+                        <td class="score">45/100</td>
+                        <td><span class="grade grade-D">D</span></td>
+                        <td class="status-Warning">⚠️ Warning</td>
+                        <td>736mo</td>
+                        <td>0.00</td>
+                    </tr>
+                    <tr>
+                        <td class="rank">5</td>
+                        <td><strong>Optimism</strong></td>
+                        <td><span class="badge">l2</span></td>
+                        <td class="score">31/100</td>
+                        <td><span class="grade grade-F">F</span></td>
+                        <td class="status-Critical">🚨 Critical</td>
+                        <td>17mo</td>
+                        <td>0.17</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="legend">
+                <h3>Legend</h3>
+                <ul>
+                    <li><strong>Score:</strong> 0-100 composite score (higher is better)</li>
+                    <li><strong>Grade:</strong> S (90+), A (80+), B (70+), C (55+), D (40+), F (&lt;40)</li>
+                    <li><strong>Status:</strong> ✅ Healthy (70+) | ⚠️ Warning (45-69) | 🚨 Critical (&lt;45)</li>
+                    <li><strong>Runway:</strong> Months until treasury depletion at current burn rate</li>
+                    <li><strong>Sustainability:</strong> Revenue/Cost ratio (1.0 = break-even)</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer>
+            <p>Last updated: 2025-12-08</p>
+            <p>Generated by <strong>Sentinel</strong> - Know your runway</p>
+        </footer>
+    </div>
+</body>
+</html>

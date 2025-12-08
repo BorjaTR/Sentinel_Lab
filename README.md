@@ -6,19 +6,41 @@
 
 **Protocol sustainability ratings for crypto. Like Moody's, but for DAOs, L2s, and DeFi.**
 
+📊 **[View Live Protocol Rankings →](https://borjatr.github.io/Sentinel_Lab/)** (Deploy to see)
+
+## Real Protocol Scores
+
+| Protocol | Score | Grade | Status | Runway | Key Issue |
+|----------|-------|-------|--------|--------|-----------|
+| **Aave** | 63/100 | C | ⚠️ Warning | 314mo | $4M/mo buybacks create deficit |
+| **Lido** | 59/100 | C | ⚠️ Warning | 301mo | Nearly break-even, tight margins |
+| **Arbitrum** | 47/100 | D | ⚠️ Warning | 88mo | $8M/mo incentive burn |
+| **Uniswap** | 45/100 | D | ⚠️ Warning | 736mo | $4.4B treasury, $0 revenue |
+| **Optimism** | 31/100 | F | 🚨 Critical | **17mo** | RPGF spending unsustainable |
+
+**Finding: 0% of major protocols are in "Healthy" status. 80% have sustainability issues.**
+
+---
+
+## Example: Arbitrum DAO
+
 ```bash
-$ sentinel score arbitrum.yaml
+$ sentinel score protocols/arbitrum.yaml
 
-SENTINEL SCORE: 76/100 (Grade B)
-Status: ✅ HEALTHY
+SENTINEL SCORE: 47/100 (Grade D)
+Status: ⚠️ WARNING
 
-Runway:          40/40  (infinite - profitable)
-Sustainability:  27/30  (ratio: 1.20)
-Diversification:  4/20  (revenue concentration risk)
-Trajectory:       5/10  (neutral trend)
+Runway:          40/40  (88 months)
+Sustainability:   0/30  (ratio: 0.19)
+Diversification:  2/20
+Trajectory:       5/10
 
-Summary: Healthy protocol with sustainable economics.
-Recommendation: Diversify revenue streams beyond sequencer fees.
+Summary: At risk. 88 months runway. Intervention recommended.
+
+TOP RECOMMENDATIONS:
+1. Review incentive_programs: $8,000,000/month (73% of costs)
+2. Treasury is 94% native token. Consider diversifying to stables.
+3. Revenue highly concentrated. Explore additional revenue sources.
 ```
 
 ---

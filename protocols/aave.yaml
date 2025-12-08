@@ -1,0 +1,77 @@
+name: Aave
+type: lending
+chain: ethereum
+website: https://aave.com
+governance_forum: https://governance.aave.com
+
+treasury:
+  holdings:
+    - symbol: AAVE
+      amount: 2500000
+      current_price_usd: 180
+      is_native: true
+    - symbol: USDC
+      amount: 42000000
+      current_price_usd: 1.00
+      is_stable: true
+    - symbol: DAI
+      amount: 28000000
+      current_price_usd: 1.00
+      is_stable: true
+    - symbol: ETH
+      amount: 8300
+      current_price_usd: 3500
+    - symbol: WBTC
+      amount: 160
+      current_price_usd: 100000
+
+revenue_streams:
+  - name: interest_spread
+    monthly_usd: 3500000
+    description: Difference between borrow and supply rates
+    confidence: high
+  - name: gho_stablecoin_revenue
+    monthly_usd: 1000000
+    description: Interest from GHO minting
+    confidence: high
+  - name: flash_loan_fees
+    monthly_usd: 200000
+    description: 0.09% fee on flash loans
+    confidence: high
+  - name: liquidation_fees
+    monthly_usd: 300000
+    description: Liquidation bonus retained by protocol
+    confidence: medium
+
+cost_streams:
+  - name: core_development
+    monthly_usd: 1500000
+    description: BGD Labs and core development
+    is_discretionary: false
+  - name: service_providers
+    monthly_usd: 800000
+    description: External service providers and auditors
+    is_discretionary: false
+  - name: aave_buybacks
+    monthly_usd: 4000000
+    description: Token buyback program (started April 2025)
+    is_discretionary: true
+  - name: grants_ecosystem
+    monthly_usd: 500000
+    description: Aave Grants DAO and ecosystem support
+    is_discretionary: true
+
+data_sources:
+  - https://governance.aave.com
+  - https://aave.tokenlogic.xyz
+  - https://defillama.com/protocol/aave
+
+last_updated: "2024-12-08"
+
+notes: |
+  Healthiest protocol financially with $115M cash reserves.
+  $1M/week buyback program started April 2025.
+  ~$20B TVL across all markets.
+  Revenue ($5M/mo) > non-buyback expenses ($2.8M/mo).
+  12% of treasury in stablecoins - better than most DAOs.
+  Buybacks are discretionary but signal strong financial position.
