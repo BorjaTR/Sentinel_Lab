@@ -484,6 +484,131 @@ def compare(protocol1: str, protocol2: str, output: str):
 
 @app.command()
 @click.argument('directory', type=click.Path(exists=True))
+def summary(directory: str):
+    """
+    Show aggregate statistics across multiple protocols.
+
+    Example:
+        sentinel summary protocols/
+        sentinel summary templates/
+    """
+    try:
+        from pathlib import Path
+        from statistics import mean, median
+
+        # Load all protocols
+        protocols = load_protocols_from_directory(Path(directory))
+
+        if not protocols:
+            click.echo(f"Error: No protocol configs found in {directory}", err=True)
+            raise click.Abort()
+
+        # Calculate scores
+        scores = []
+        for protocol in protocols:
+            score = calculate_sentinel_score(protocol)
+            scores.append((protocol, score))
+
+        # Aggregate statistics
+        total_count = len(scores)
+        total_scores = [s.total_score for _, s in scores]
+        avg_score = mean(total_scores)
+        median_score = median(total_scores)
+
+        # Status distribution
+        healthy = sum(1 for _, s in scores if s.status == "Healthy")
+        warning = sum(1 for _, s in scores if s.status == "Warning")
+        critical = sum(1 for _, s in scores if s.status == "Critical")
+
+        # Grade distribution
+        grade_counts = {}
+        for _, s in scores:
+            grade_counts[s.grade] = grade_counts.get(s.grade, 0) + 1
+
+        # Profitability
+        profitable = sum(1 for p, _ in scores if p.monthly_net >= 0)
+        unprofitable = total_count - profitable
+
+        # Treasury stats
+        total_treasury = sum(p.treasury.balance_usd for p, _ in scores)
+        avg_treasury = total_treasury / total_count
+
+        # Protocol types
+        type_counts = {}
+        for p, _ in scores:
+            ptype = p.type.value
+            type_counts[ptype] = type_counts.get(ptype, 0) + 1
+
+        # Display summary
+        click.echo("=" * 60)
+        click.echo("PROTOCOL SUMMARY STATISTICS")
+        click.echo("=" * 60)
+        click.echo(f"Directory: {directory}")
+        click.echo(f"Total Protocols: {total_count}")
+        click.echo()
+
+        click.echo("SCORE STATISTICS")
+        click.echo("-" * 60)
+        click.echo(f"Average Score:    {avg_score:.1f}/100")
+        click.echo(f"Median Score:     {median_score:.1f}/100")
+        click.echo(f"Highest Score:    {max(total_scores)}/100")
+        click.echo(f"Lowest Score:     {min(total_scores)}/100")
+        click.echo()
+
+        click.echo("STATUS DISTRIBUTION")
+        click.echo("-" * 60)
+        click.echo(f"✅ Healthy:   {healthy:2} ({100*healthy/total_count:.0f}%)")
+        click.echo(f"⚠️  Warning:   {warning:2} ({100*warning/total_count:.0f}%)")
+        click.echo(f"🚨 Critical:  {critical:2} ({100*critical/total_count:.0f}%)")
+        click.echo()
+
+        click.echo("GRADE DISTRIBUTION")
+        click.echo("-" * 60)
+        for grade in ['S', 'A', 'B', 'C', 'D', 'F']:
+            count = grade_counts.get(grade, 0)
+            if count > 0:
+                bar = "█" * count
+                click.echo(f"Grade {grade}:  {count:2}  {bar}")
+        click.echo()
+
+        click.echo("FINANCIAL OVERVIEW")
+        click.echo("-" * 60)
+        click.echo(f"Profitable:       {profitable:2} ({100*profitable/total_count:.0f}%)")
+        click.echo(f"Unprofitable:     {unprofitable:2} ({100*unprofitable/total_count:.0f}%)")
+        click.echo(f"Total Treasury:   ${total_treasury:,.0f}")
+        click.echo(f"Avg Treasury:     ${avg_treasury:,.0f}")
+        click.echo()
+
+        click.echo("PROTOCOL TYPES")
+        click.echo("-" * 60)
+        for ptype, count in sorted(type_counts.items(), key=lambda x: x[1], reverse=True):
+            click.echo(f"{ptype.upper():12} {count:2} ({100*count/total_count:.0f}%)")
+        click.echo()
+
+        # Top and bottom performers
+        sorted_scores = sorted(scores, key=lambda x: x[1].total_score, reverse=True)
+
+        click.echo("TOP 3 PROTOCOLS")
+        click.echo("-" * 60)
+        for i, (p, s) in enumerate(sorted_scores[:3], 1):
+            click.echo(f"{i}. {p.name:30} {s.total_score}/100 (Grade {s.grade})")
+
+        if len(sorted_scores) > 3:
+            click.echo()
+            click.echo("BOTTOM 3 PROTOCOLS")
+            click.echo("-" * 60)
+            for i, (p, s) in enumerate(sorted_scores[-3:][::-1], 1):
+                click.echo(f"{i}. {p.name:30} {s.total_score}/100 (Grade {s.grade})")
+
+        click.echo("=" * 60)
+
+    except Exception as e:
+        click.echo(f"Error: {str(e)}", err=True)
+        raise click.Abort()
+
+
+@app.command()
+@click.argument('directory', type=click.Path(exists=True))
 @click.option('--output-file', '-o', type=click.Path(), required=True, help='Output CSV file path')
 def export(directory: str, output_file: str):
     """
