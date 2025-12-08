@@ -3,6 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
+      - main
       - claude/review-repository-01GoLAkoWjYQ4PPpDLfWuCQR
     paths:
       - 'site/**'
