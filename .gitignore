@@ -26,3 +26,6 @@ data/processed_batch.csv
 # Ignore Generated Analytics Data
 logs/*.csv
 data/processed_batch.csv
+
+# Ignore Rankings Test Output
+rankings_output.*
