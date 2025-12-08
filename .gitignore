@@ -19,3 +19,10 @@ data/processed_batch.csv
 
 # Ignore Mac System Files
 .DS_Store
+
+# Ignore Test Logs
+*.log
+
+# Ignore Generated Analytics Data
+logs/*.csv
+data/processed_batch.csv
